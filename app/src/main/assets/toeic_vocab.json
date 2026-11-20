@@ -1,0 +1,302 @@
+[
+  {
+    "id": 1,
+    "topic": "Business & Office",
+    "word": "agenda",
+    "phonetic": "/əˈdʒendə/",
+    "partOfSpeech": "n.",
+    "meaningVi": "chương trình nghị sự, danh sách công việc cần bàn trong cuộc họp",
+    "exampleEn": "Please review the meeting agenda before we start at 9 a.m.",
+    "exampleVi": "Vui lòng xem lại chương trình nghị sự của cuộc họp trước khi chúng ta bắt đầu lúc 9 giờ sáng."
+  },
+  {
+    "id": 2,
+    "topic": "Business & Office",
+    "word": "collaborate",
+    "phonetic": "/kəˈlæbəreɪt/",
+    "partOfSpeech": "v.",
+    "meaningVi": "hợp tác, cộng tác",
+    "exampleEn": "The marketing and sales teams will collaborate on the product launch.",
+    "exampleVi": "Nhóm tiếp thị và nhóm bán hàng sẽ hợp tác trong buổi ra mắt sản phẩm."
+  },
+  {
+    "id": 3,
+    "topic": "Business & Office",
+    "word": "deadline",
+    "phonetic": "/ˈdedlaɪn/",
+    "partOfSpeech": "n.",
+    "meaningVi": "hạn chót, thời hạn cuối cùng",
+    "exampleEn": "We need to submit the quarterly report before Friday's deadline.",
+    "exampleVi": "Chúng ta cần nộp báo cáo quý trước hạn chót vào thứ Sáu."
+  },
+  {
+    "id": 4,
+    "topic": "Business & Office",
+    "word": "delegate",
+    "phonetic": "/ˈdelɪɡeɪt/",
+    "partOfSpeech": "v.",
+    "meaningVi": "ủy quyền, giao phó nhiệm vụ",
+    "exampleEn": "Good managers know how to delegate routine tasks to their staff.",
+    "exampleVi": "Những nhà quản lý giỏi biết cách giao phó các công việc thường ngày cho nhân viên."
+  },
+  {
+    "id": 5,
+    "topic": "Business & Office",
+    "word": "implement",
+    "phonetic": "/ˈɪmplɪment/",
+    "partOfSpeech": "v.",
+    "meaningVi": "triển khai, thực hiện",
+    "exampleEn": "The company will implement a new remote-work policy next month.",
+    "exampleVi": "Công ty sẽ triển khai chính sách làm việc từ xa mới vào tháng tới."
+  },
+  {
+    "id": 6,
+    "topic": "Business & Office",
+    "word": "mandatory",
+    "phonetic": "/ˈmændətɔːri/",
+    "partOfSpeech": "adj.",
+    "meaningVi": "bắt buộc, có tính quy định",
+    "exampleEn": "Attendance at the annual safety training session is mandatory for all employees.",
+    "exampleVi": "Việc tham dự buổi tập huấn an toàn hằng năm là bắt buộc đối với mọi nhân viên."
+  },
+  {
+    "id": 7,
+    "topic": "Business & Office",
+    "word": "negotiate",
+    "phonetic": "/nɪˈɡoʊʃieɪt/",
+    "partOfSpeech": "v.",
+    "meaningVi": "đàm phán, thương lượng",
+    "exampleEn": "Our legal team is preparing to negotiate better terms with the supplier.",
+    "exampleVi": "Bộ phận pháp lý của chúng tôi đang chuẩn bị đàm phán các điều khoản tốt hơn với nhà cung cấp."
+  },
+  {
+    "id": 8,
+    "topic": "Business & Office",
+    "word": "productivity",
+    "phonetic": "/ˌprɑːdʌkˈtɪvəti/",
+    "partOfSpeech": "n.",
+    "meaningVi": "năng suất, hiệu suất làm việc",
+    "exampleEn": "Upgrading the office software significantly improved overall productivity.",
+    "exampleVi": "Việc nâng cấp phần mềm văn phòng đã cải thiện đáng kể năng suất tổng thể."
+  },
+  {
+    "id": 9,
+    "topic": "Business & Office",
+    "word": "recruit",
+    "phonetic": "/rɪˈkruːt/",
+    "partOfSpeech": "v.",
+    "meaningVi": "tuyển dụng, chiêu mộ",
+    "exampleEn": "Human Resources plans to recruit ten software engineers this quarter.",
+    "exampleVi": "Phòng Nhân sự dự định tuyển dụng mười kỹ sư phần mềm trong quý này."
+  },
+  {
+    "id": 10,
+    "topic": "Business & Office",
+    "word": "supervisor",
+    "phonetic": "/ˈsuːpərvaɪzər/",
+    "partOfSpeech": "n.",
+    "meaningVi": "người giám sát, quản lý trực tiếp",
+    "exampleEn": "Employees must obtain approval from their supervisor before taking leave.",
+    "exampleVi": "Nhân viên phải xin phê duyệt từ người giám sát trước khi nghỉ phép."
+  },
+  {
+    "id": 11,
+    "topic": "Finance & Banking",
+    "word": "audit",
+    "phonetic": "/ˈɔːdɪt/",
+    "partOfSpeech": "n.",
+    "meaningVi": "cuộc kiểm toán, sự kiểm tra sổ sách tài chính",
+    "exampleEn": "An independent firm conducts a financial audit of our accounts every year.",
+    "exampleVi": "Một công ty độc lập tiến hành kiểm toán tài chính các tài khoản của chúng tôi mỗi năm."
+  },
+  {
+    "id": 12,
+    "topic": "Finance & Banking",
+    "word": "budget",
+    "phonetic": "/ˈbʌdʒɪt/",
+    "partOfSpeech": "n.",
+    "meaningVi": "ngân sách, dự toán chi tiêu",
+    "exampleEn": "The department stayed well within its allocated budget this fiscal year.",
+    "exampleVi": "Phòng ban đã chi tiêu hoàn toàn trong phạm vi ngân sách được phân bổ trong năm tài chính này."
+  },
+  {
+    "id": 13,
+    "topic": "Finance & Banking",
+    "word": "dividend",
+    "phonetic": "/ˈdɪvɪdend/",
+    "partOfSpeech": "n.",
+    "meaningVi": "cổ tức (lợi nhuận chia cho cổ đông)",
+    "exampleEn": "Shareholders will receive a higher quarterly dividend due to strong profits.",
+    "exampleVi": "Các cổ đông sẽ nhận được mức cổ tức hằng quý cao hơn nhờ lợi nhuận tăng mạnh."
+  },
+  {
+    "id": 14,
+    "topic": "Finance & Banking",
+    "word": "expenditure",
+    "phonetic": "/ɪkˈspendɪtʃər/",
+    "partOfSpeech": "n.",
+    "meaningVi": "khoản chi tiêu, chi phí",
+    "exampleEn": "Management is looking for ways to reduce unnecessary capital expenditure.",
+    "exampleVi": "Ban lãnh đạo đang tìm cách cắt giảm các khoản chi tiêu vốn không cần thiết."
+  },
+  {
+    "id": 15,
+    "topic": "Finance & Banking",
+    "word": "forecast",
+    "phonetic": "/ˈfɔːrkæst/",
+    "partOfSpeech": "n.",
+    "meaningVi": "bản dự báo (tài chính, doanh thu)",
+    "exampleEn": "According to the latest economic forecast, interest rates will remain steady.",
+    "exampleVi": "Theo dự báo kinh tế mới nhất, lãi suất sẽ duy trì ổn định."
+  },
+  {
+    "id": 16,
+    "topic": "Finance & Banking",
+    "word": "invoice",
+    "phonetic": "/ˈɪnvɔɪs/",
+    "partOfSpeech": "n.",
+    "meaningVi": "hóa đơn thanh toán",
+    "exampleEn": "Please attach the original invoice when submitting your payment request.",
+    "exampleVi": "Vui lòng đính kèm hóa đơn gốc khi gửi yêu cầu thanh toán."
+  },
+  {
+    "id": 17,
+    "topic": "Finance & Banking",
+    "word": "liability",
+    "phonetic": "/ˌlaɪəˈbɪləti/",
+    "partOfSpeech": "n.",
+    "meaningVi": "khoản nợ phải trả, trách nhiệm pháp lý",
+    "exampleEn": "The balance sheet lists all current assets alongside long-term liabilities.",
+    "exampleVi": "Bảng cân đối kế toán liệt kê toàn bộ tài sản ngắn hạn cùng với các khoản nợ dài hạn."
+  },
+  {
+    "id": 18,
+    "topic": "Finance & Banking",
+    "word": "mortgage",
+    "phonetic": "/ˈmɔːrɡɪdʒ/",
+    "partOfSpeech": "n.",
+    "meaningVi": "khoản vay thế chấp",
+    "exampleEn": "The bank offered a fixed-rate mortgage for first-time commercial buyers.",
+    "exampleVi": "Ngân hàng đã cung cấp khoản vay thế chấp lãi suất cố định cho người mua bất động sản thương mại lần đầu."
+  },
+  {
+    "id": 19,
+    "topic": "Finance & Banking",
+    "word": "reimburse",
+    "phonetic": "/ˌriːɪmˈbɜːrs/",
+    "partOfSpeech": "v.",
+    "meaningVi": "hoàn trả, bồi hoàn chi phí",
+    "exampleEn": "The company will reimburse all approved travel expenses within ten business days.",
+    "exampleVi": "Công ty sẽ hoàn trả toàn bộ chi phí công tác được phê duyệt trong vòng mười ngày làm việc."
+  },
+  {
+    "id": 20,
+    "topic": "Finance & Banking",
+    "word": "revenue",
+    "phonetic": "/ˈrevənuː/",
+    "partOfSpeech": "n.",
+    "meaningVi": "doanh thu, nguồn thu",
+    "exampleEn": "Online subscriptions accounted for nearly half of our total revenue last year.",
+    "exampleVi": "Các gói đăng ký trực tuyến chiếm gần một nửa tổng doanh thu của chúng tôi vào năm ngoái."
+  },
+  {
+    "id": 21,
+    "topic": "Travel & Logistics",
+    "word": "itinerary",
+    "phonetic": "/aɪˈtɪnəreri/",
+    "partOfSpeech": "n.",
+    "meaningVi": "lịch trình chuyến đi, hành trình",
+    "exampleEn": "Our travel coordinator emailed the updated flight itinerary this morning.",
+    "exampleVi": "Điều phối viên du lịch của chúng tôi đã gửi email lịch trình chuyến bay cập nhật vào sáng nay."
+  },
+  {
+    "id": 22,
+    "topic": "Travel & Logistics",
+    "word": "customs",
+    "phonetic": "/ˈkʌstəmz/",
+    "partOfSpeech": "n.",
+    "meaningVi": "hải quan, thủ tục thông quan",
+    "exampleEn": "International parcels may be delayed for inspection at customs.",
+    "exampleVi": "Các bưu kiện quốc tế có thể bị chậm trễ để kiểm tra tại hải quan."
+  },
+  {
+    "id": 23,
+    "topic": "Travel & Logistics",
+    "word": "departure",
+    "phonetic": "/dɪˈpɑːrtʃər/",
+    "partOfSpeech": "n.",
+    "meaningVi": "sự khởi hành, giờ xuất phát",
+    "exampleEn": "Passengers are advised to arrive at the terminal two hours before departure.",
+    "exampleVi": "Hành khách được khuyên đến nhà ga trước giờ khởi hành hai tiếng."
+  },
+  {
+    "id": 24,
+    "topic": "Travel & Logistics",
+    "word": "freight",
+    "phonetic": "/freɪt/",
+    "partOfSpeech": "n.",
+    "meaningVi": "hàng hóa vận chuyển, cước phí vận tải",
+    "exampleEn": "Sea freight is usually more economical than air shipping for heavy machinery.",
+    "exampleVi": "Vận tải đường biển thường tiết kiệm hơn vận chuyển hàng không đối với máy móc hạng nặng."
+  },
+  {
+    "id": 25,
+    "topic": "Travel & Logistics",
+    "word": "inventory",
+    "phonetic": "/ˈɪnvəntɔːri/",
+    "partOfSpeech": "n.",
+    "meaningVi": "hàng tồn kho, bảng kiểm kê kho",
+    "exampleEn": "We use barcode scanners to track warehouse inventory in real time.",
+    "exampleVi": "Chúng tôi sử dụng máy quét mã vạch để theo dõi hàng tồn kho theo thời gian thực."
+  },
+  {
+    "id": 26,
+    "topic": "Travel & Logistics",
+    "word": "shipment",
+    "phonetic": "/ˈʃɪpmənt/",
+    "partOfSpeech": "n.",
+    "meaningVi": "lô hàng, việc giao vận hàng",
+    "exampleEn": "The latest shipment of electronic components is scheduled to arrive on Tuesday.",
+    "exampleVi": "Lô hàng linh kiện điện tử mới nhất dự kiến sẽ đến vào thứ Ba."
+  },
+  {
+    "id": 27,
+    "topic": "Travel & Logistics",
+    "word": "warehouse",
+    "phonetic": "/ˈwerhaʊs/",
+    "partOfSpeech": "n.",
+    "meaningVi": "nhà kho, kho lưu trữ hàng hóa",
+    "exampleEn": "All returned items are inspected and sorted at our central warehouse.",
+    "exampleVi": "Mọi mặt hàng hoàn trả đều được kiểm tra và phân loại tại kho trung tâm của chúng tôi."
+  },
+  {
+    "id": 28,
+    "topic": "Travel & Logistics",
+    "word": "accommodation",
+    "phonetic": "/əˌkɑːməˈdeɪʃn/",
+    "partOfSpeech": "n.",
+    "meaningVi": "chỗ ở, nơi lưu trú",
+    "exampleEn": "Hotel accommodation near the convention center was booked weeks in advance.",
+    "exampleVi": "Chỗ ở khách sạn gần trung tâm hội nghị đã được đặt trước nhiều tuần."
+  },
+  {
+    "id": 29,
+    "topic": "Travel & Logistics",
+    "word": "boarding pass",
+    "phonetic": "/ˈbɔːrdɪŋ pæs/",
+    "partOfSpeech": "n.",
+    "meaningVi": "thẻ lên máy bay",
+    "exampleEn": "You can download your mobile boarding pass after checking in online.",
+    "exampleVi": "Bạn có thể tải thẻ lên máy bay điện tử sau khi làm thủ tục trực tuyến."
+  },
+  {
+    "id": 30,
+    "topic": "Travel & Logistics",
+    "word": "consignment",
+    "phonetic": "/kənˈsaɪnmənt/",
+    "partOfSpeech": "n.",
+    "meaningVi": "lô hàng ký gửi, sự gửi hàng",
+    "exampleEn": "The carrier confirmed that the medical consignment was delivered intact.",
+    "exampleVi": "Đơn vị vận chuyển xác nhận rằng lô hàng y tế đã được giao nguyên vẹn."
+  }
+]
