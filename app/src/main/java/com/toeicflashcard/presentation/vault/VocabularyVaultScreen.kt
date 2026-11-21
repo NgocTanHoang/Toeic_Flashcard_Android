@@ -16,6 +16,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -27,9 +28,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -59,6 +63,7 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -68,11 +73,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.toeicflashcard.core.ui.glass.AdaptiveCardMinWidth
+import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.CollapsibleHeaderSpring
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassSearchCapsule
+import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
+import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
+import com.toeicflashcard.core.ui.glass.gridItemSpacing
 import com.toeicflashcard.core.ui.glass.rememberLiquidGlassBorderBrush
+import com.toeicflashcard.core.ui.glass.screenHorizontalPadding
 import com.toeicflashcard.core.ui.theme.LocalGlassOpacity
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.core.ui.theme.LocalSm2RatingColors
@@ -95,7 +106,7 @@ fun VocabularyVaultScreen(
     viewModel: VocabularyVaultViewModel,
     query: String,
     headerHeightDp: Dp,
-    listState: LazyListState,
+    gridState: LazyGridState,
     nestedScrollConnection: NestedScrollConnection,
     onShowMessage: (String) -> Unit
 ) {
@@ -138,61 +149,75 @@ fun VocabularyVaultScreen(
                 CircularProgressIndicator()
             }
         } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 18.dp,
-                    end = 18.dp,
-                    top = headerHeightDp + 10.dp,
-                    bottom = 108.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                if (state.words.isEmpty()) {
-                    item(
-                        key = "__vault_empty__",
-                        contentType = "vault_empty"
-                    ) {
-                        LiquidGlassCard(
-                            shape = VaultWordCardShape,
-                            modifier = Modifier.fillMaxWidth()
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val isWide = maxWidth >= AdaptiveWideBreakpoint
+                val sidePad = adaptiveHorizontalPadding(
+                    availableWidth = maxWidth,
+                    maxContentWidth = MainContentMaxWidth
+                )
+                val gridGap = gridItemSpacing(maxWidth)
+
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = AdaptiveCardMinWidth),
+                    state = gridState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = sidePad,
+                        end = sidePad,
+                        top = headerHeightDp + 10.dp,
+                        bottom = 108.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(gridGap),
+                    verticalArrangement = Arrangement.spacedBy(gridGap)
+                ) {
+                    if (state.words.isEmpty()) {
+                        item(
+                            key = "__vault_empty__",
+                            span = { GridItemSpan(maxLineSpan) },
+                            contentType = "vault_empty"
                         ) {
-                            Text(
-                                text = if (query.isBlank()) {
-                                    "Chưa có từ vựng nào trong nhóm \"${state.selectedFilter.label}\"."
-                                } else {
-                                    "Không tìm thấy từ nào khớp với \"$query\"."
-                                },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(18.dp)
+                            LiquidGlassCard(
+                                shape = VaultWordCardShape,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = if (query.isBlank()) {
+                                        "Chưa có từ vựng nào trong nhóm \"${state.selectedFilter.label}\"."
+                                    } else {
+                                        "Không tìm thấy từ nào khớp với \"$query\"."
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(18.dp)
+                                )
+                            }
+                        }
+                    } else {
+                        items(
+                            items = state.words,
+                            key = { it.id },
+                            contentType = { "vocab_card" }
+                        ) { word ->
+                            val onSpeak = remember(word.word, viewModel) {
+                                { viewModel.speakWord(word.word) }
+                            }
+                            VaultWordCard(
+                                word = word,
+                                isWide = isWide,
+                                onSpeak = onSpeak
                             )
                         }
                     }
-                } else {
-                    items(
-                        items = state.words,
-                        key = { it.id },
-                        contentType = { "vocab_card" }
-                    ) { word ->
-                        val onSpeak = remember(word.word, viewModel) {
-                            { viewModel.speakWord(word.word) }
-                        }
-                        VaultWordCard(
-                            word = word,
-                            onSpeak = onSpeak
-                        )
-                    }
-                }
 
-                item(
-                    key = "__vault_nav_spacer__",
-                    contentType = "vault_nav_spacer"
-                ) {
-                    Spacer(modifier = Modifier.navigationBarsPadding())
+                    item(
+                        key = "__vault_nav_spacer__",
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = "vault_nav_spacer"
+                    ) {
+                        Spacer(modifier = Modifier.navigationBarsPadding())
+                    }
                 }
             }
         }
@@ -205,6 +230,7 @@ fun FloatingVaultHeader(
     totalCount: Int,
     query: String,
     selectedFilter: VaultFilter,
+    counts: Map<VaultFilter, Int> = emptyMap(),
     isCollapsed: Boolean = false,
     contentHazeState: HazeState,
     onQueryChange: (String) -> Unit,
@@ -214,6 +240,7 @@ fun FloatingVaultHeader(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    val horizPad = screenHorizontalPadding(LocalConfiguration.current.screenWidthDp.dp)
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
     var topRowHeightPx by remember { mutableIntStateOf(0) }
@@ -275,9 +302,11 @@ fun FloatingVaultHeader(
             )
         }
 
-        // Layer 2: Collapsing top bar + Sticky floating frosted search pill + collapsing filter row
+        // Layer 2: Collapsing top bar + Sticky floating frosted search pill + collapsing filter row centered at 1100.dp
         Column(
             modifier = Modifier
+                .align(Alignment.TopCenter)
+                .widthIn(max = MainContentMaxWidth)
                 .fillMaxWidth()
                 .statusBarsPadding()
         ) {
@@ -297,7 +326,7 @@ fun FloatingVaultHeader(
                             translationY = -topRowHeightPx * p
                             alpha = (1f - p * 1.35f).coerceIn(0f, 1f)
                         }
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                        .padding(horizontal = horizPad, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -344,7 +373,7 @@ fun FloatingVaultHeader(
                 floatingBlurRadius = 18.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 18.dp)
+                    .padding(horizontal = horizPad)
                     .layout { measurable, constraints ->
                         val inset = (extraSideMarginPx * collapseProgressState.value).roundToInt()
                         val narrowedMaxWidth = (constraints.maxWidth - inset * 2).coerceAtLeast(0)
@@ -390,12 +419,18 @@ fun FloatingVaultHeader(
                             translationY = -filterRowHeightPx * p
                             alpha = (1f - p * 1.6f).coerceIn(0f, 1f)
                         }
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                        .padding(horizontal = horizPad, vertical = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     VaultFilter.entries.forEach { filter ->
+                        val filterCount = counts[filter]
+                        val chipLabel = if (filterCount != null && filter != VaultFilter.ALL) {
+                            "${filter.label} ($filterCount)"
+                        } else {
+                            filter.label
+                        }
                         VaultFilterChip(
-                            label = filter.label,
+                            label = chipLabel,
                             selected = selectedFilter == filter,
                             interactive = !isCollapsed,
                             onClick = { onSelectFilter(filter) },
@@ -527,6 +562,7 @@ private fun VaultFilterChip(
 @Composable
 private fun VaultWordCard(
     word: VocabularyWord,
+    isWide: Boolean = false,
     onSpeak: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
@@ -556,7 +592,7 @@ private fun VaultWordCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(14.dp),
+                .padding(if (isWide) 18.dp else 14.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Row(

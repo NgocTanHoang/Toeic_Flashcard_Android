@@ -46,7 +46,8 @@ class ObserveHomeSummaryUseCase(
                 deckName = com.toeicflashcard.domain.model.VocabularyDecks.displayNameFor(deckId),
                 learnedCount = deckWords.count { it.isLearned },
                 totalCount = deckWords.size,
-                dueCount = deckWords.count { it.isDue(cutoffMillis) }
+                dueCount = deckWords.count { it.isDue(cutoffMillis) },
+                topicCount = deckWords.map { it.topic }.distinct().size
             )
         }
 
@@ -57,6 +58,8 @@ class ObserveHomeSummaryUseCase(
         }
 
         val dueTodayCount = activeWords.count { it.isDue(cutoffMillis) }
+        val reviewDueCount = activeWords.count { it.repetitions > 0 && it.isDue(cutoffMillis) }
+        val newWordsCount = activeWords.count { it.repetitions == 0 && !it.isLearned }
         val learnedCount = activeWords.count { it.isLearned }
         val grouped = activeWords.groupBy { it.topic }
         val orderedTopicNames = activeWords.map { it.topic }.distinct()
@@ -71,11 +74,20 @@ class ObserveHomeSummaryUseCase(
             )
         }
 
+        val continueTopic = topicProgressList
+            .filter { it.learnedCount in 1 until it.totalCount }
+            .maxByOrNull { progress ->
+                grouped[progress.topic].orEmpty().maxOfOrNull { it.lastReviewedTimestamp } ?: 0L
+            }
+
         return HomeSummary(
             dueTodayCount = dueTodayCount,
+            reviewDueCount = reviewDueCount,
+            newWordsCount = newWordsCount,
             learnedCount = learnedCount,
             totalCount = activeWords.size,
             topics = topicProgressList,
+            continueTopic = continueTopic,
             decks = decks,
             selectedDeckId = selectedDeckId,
             hasAnyDatabaseWords = words.isNotEmpty()

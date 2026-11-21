@@ -10,10 +10,12 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -38,6 +40,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.toeicflashcard.core.ui.glass.AppWindowMetrics
+import com.toeicflashcard.core.ui.glass.LocalAppWindowMetrics
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.presentation.home.HomeViewModel
 import com.toeicflashcard.presentation.main.MainTabShell
@@ -94,11 +98,15 @@ fun ToeicNavHost() {
         }
     }
 
-    Box(
+    BoxWithConstraints(
         modifier = Modifier
             .fillMaxSize()
             .background(glassColors.hazeBackground)
     ) {
+        val windowMetrics = remember(maxWidth, maxHeight) {
+            AppWindowMetrics(widthDp = maxWidth, heightDp = maxHeight)
+        }
+        CompositionLocalProvider(LocalAppWindowMetrics provides windowMetrics) {
         // Keep MainTabShell warm in composition so Back returns with 0ms re-composition delay;
         // skip draw and clear semantics only while a pushed Study/Quiz sheet completely covers it.
         Box(
@@ -226,6 +234,7 @@ fun ToeicNavHost() {
                     )
                 }
             }
+        }
         }
     }
 }

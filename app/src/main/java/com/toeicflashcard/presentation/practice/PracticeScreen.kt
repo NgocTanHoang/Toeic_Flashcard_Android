@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.shape.CircleShape
@@ -42,14 +44,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
+import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
+import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
 import com.toeicflashcard.core.ui.theme.LocalGlassOpacity
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeChild
+import java.text.NumberFormat
+import java.util.Locale
 
 private val PracticeActionCardShape = RoundedCornerShape(20.dp)
 
@@ -61,41 +68,78 @@ fun PracticeScreen(
     onOpenStandardQuiz: () -> Unit,
     onOpenListeningQuiz: () -> Unit
 ) {
-    LazyColumn(
-        state = listState,
-        modifier = Modifier
-            .fillMaxSize()
-            .nestedScroll(nestedScrollConnection),
-        contentPadding = PaddingValues(
-            start = 18.dp,
-            end = 18.dp,
-            top = headerHeightDp + 12.dp,
-            bottom = 108.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
-    ) {
-        item(key = "__practice_quiz__", contentType = "practice_mode") {
-            PracticeModeGlassCard(
-                icon = Icons.Rounded.Quiz,
-                title = "Trắc nghiệm nhanh",
-                subtitle = "10 câu trắc nghiệm nghĩa ngẫu nhiên",
-                accentColor = MaterialTheme.colorScheme.primary,
-                onClick = onOpenStandardQuiz
-            )
-        }
+    BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+        val isWide = maxWidth >= AdaptiveWideBreakpoint
+        val sidePad = adaptiveHorizontalPadding(
+            availableWidth = maxWidth,
+            maxContentWidth = MainContentMaxWidth,
+            basePadding = 18.dp
+        )
 
-        item(key = "__practice_listening__", contentType = "practice_mode") {
-            PracticeModeGlassCard(
-                icon = Icons.Rounded.Headphones,
-                title = "Luyện nghe từ vựng",
-                subtitle = "Nghe phát âm TTS và chọn nghĩa đúng",
-                accentColor = MaterialTheme.colorScheme.secondary,
-                onClick = onOpenListeningQuiz
-            )
-        }
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .nestedScroll(nestedScrollConnection),
+            contentPadding = PaddingValues(
+                start = sidePad,
+                end = sidePad,
+                top = headerHeightDp + 12.dp,
+                bottom = 108.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            if (isWide) {
+                item(key = "__practice_row__", contentType = "practice_row_2col") {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            PracticeModeGlassCard(
+                                icon = Icons.Rounded.Quiz,
+                                title = "Trắc nghiệm nhanh",
+                                subtitle = "10 câu trắc nghiệm nghĩa ngẫu nhiên",
+                                accentColor = MaterialTheme.colorScheme.primary,
+                                onClick = onOpenStandardQuiz
+                            )
+                        }
+                        Box(modifier = Modifier.weight(1f)) {
+                            PracticeModeGlassCard(
+                                icon = Icons.Rounded.Headphones,
+                                title = "Luyện nghe từ vựng",
+                                subtitle = "Nghe phát âm TTS và chọn nghĩa đúng",
+                                accentColor = MaterialTheme.colorScheme.secondary,
+                                onClick = onOpenListeningQuiz
+                            )
+                        }
+                    }
+                }
+            } else {
+                item(key = "__practice_quiz__", contentType = "practice_mode") {
+                    PracticeModeGlassCard(
+                        icon = Icons.Rounded.Quiz,
+                        title = "Trắc nghiệm nhanh",
+                        subtitle = "10 câu trắc nghiệm nghĩa ngẫu nhiên",
+                        accentColor = MaterialTheme.colorScheme.primary,
+                        onClick = onOpenStandardQuiz
+                    )
+                }
 
-        item(key = "__practice_nav_spacer__", contentType = "nav_spacer") {
-            Spacer(modifier = Modifier.navigationBarsPadding())
+                item(key = "__practice_listening__", contentType = "practice_mode") {
+                    PracticeModeGlassCard(
+                        icon = Icons.Rounded.Headphones,
+                        title = "Luyện nghe từ vựng",
+                        subtitle = "Nghe phát âm TTS và chọn nghĩa đúng",
+                        accentColor = MaterialTheme.colorScheme.secondary,
+                        onClick = onOpenListeningQuiz
+                    )
+                }
+            }
+
+            item(key = "__practice_nav_spacer__", contentType = "nav_spacer") {
+                Spacer(modifier = Modifier.navigationBarsPadding())
+            }
         }
     }
 }
@@ -138,6 +182,8 @@ fun FloatingPracticeHeader(
     ) {
         Row(
             modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .widthIn(max = MainContentMaxWidth)
                 .fillMaxWidth()
                 .padding(horizontal = 18.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
@@ -153,8 +199,9 @@ fun FloatingPracticeHeader(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
                 Text(
-                    text = "$selectedDeckName • $totalCount từ",
+                    text = "$selectedDeckName • ${viFormatter.format(totalCount)} từ",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,

@@ -10,6 +10,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.decodeFromJsonElement
 import java.util.Locale
 
 data class CustomWordInput(
@@ -43,7 +46,12 @@ data class CustomVocabularyImportDto(
     val meaningVi: String = "",
     val topic: String = AddCustomVocabularyUseCase.DEFAULT_CUSTOM_TOPIC,
     val exampleEn: String = "",
-    val exampleVi: String = ""
+    val exampleVi: String = "",
+    val repetitions: Int = 0,
+    val intervalDays: Int = 0,
+    val easeFactor: Float = Sm2Scheduler.DEFAULT_EASE_FACTOR,
+    val nextReviewTimestamp: Long = 0L,
+    val lastReviewedTimestamp: Long = 0L
 )
 
 class AddCustomVocabularyUseCase(
@@ -114,7 +122,19 @@ class AddCustomVocabularyUseCase(
         }
 
         val items = runCatching {
-            jsonParser.decodeFromString<List<CustomVocabularyImportDto>>(sanitized)
+            val root = jsonParser.parseToJsonElement(sanitized)
+            when (root) {
+                is JsonArray -> jsonParser.decodeFromJsonElement<List<CustomVocabularyImportDto>>(root)
+                is JsonObject -> {
+                    val wordsElement = root["words"] ?: root["items"]
+                    if (wordsElement != null) {
+                        jsonParser.decodeFromJsonElement<List<CustomVocabularyImportDto>>(wordsElement)
+                    } else {
+                        listOf(jsonParser.decodeFromJsonElement<CustomVocabularyImportDto>(root))
+                    }
+                }
+                else -> throw IllegalArgumentException("Unsupported JSON root")
+            }
         }.getOrElse {
             return@withContext ImportJsonResult(
                 addedCount = 0,
@@ -166,7 +186,12 @@ class AddCustomVocabularyUseCase(
                 topic = dto.topic.trim().ifEmpty { DEFAULT_CUSTOM_TOPIC },
                 exampleEn = dto.exampleEn.trim(),
                 exampleVi = dto.exampleVi.trim(),
-                nowMillis = nowMillis
+                nowMillis = nowMillis,
+                repetitions = dto.repetitions.coerceAtLeast(0),
+                intervalDays = dto.intervalDays.coerceAtLeast(0),
+                easeFactor = dto.easeFactor.coerceAtLeast(Sm2Scheduler.MIN_EASE_FACTOR),
+                nextReviewTimestamp = if (dto.nextReviewTimestamp > 0L) dto.nextReviewTimestamp else nowMillis,
+                lastReviewedTimestamp = dto.lastReviewedTimestamp.coerceAtLeast(0L)
             )
         }
 
@@ -198,7 +223,12 @@ class AddCustomVocabularyUseCase(
         topic: String,
         exampleEn: String,
         exampleVi: String,
-        nowMillis: Long
+        nowMillis: Long,
+        repetitions: Int = 0,
+        intervalDays: Int = 0,
+        easeFactor: Float = Sm2Scheduler.DEFAULT_EASE_FACTOR,
+        nextReviewTimestamp: Long = nowMillis,
+        lastReviewedTimestamp: Long = 0L
     ): VocabularyWord {
         return VocabularyWord(
             id = id,
@@ -209,11 +239,11 @@ class AddCustomVocabularyUseCase(
             meaningVi = cleanMeaning,
             exampleEn = exampleEn,
             exampleVi = exampleVi,
-            repetitions = 0,
-            intervalDays = 0,
-            easeFactor = Sm2Scheduler.DEFAULT_EASE_FACTOR,
-            nextReviewTimestamp = nowMillis,
-            lastReviewedTimestamp = 0L,
+            repetitions = repetitions,
+            intervalDays = intervalDays,
+            easeFactor = easeFactor,
+            nextReviewTimestamp = nextReviewTimestamp,
+            lastReviewedTimestamp = lastReviewedTimestamp,
             deckId = VocabularyDecks.CUSTOM_USER_ID,
             deckName = VocabularyDecks.CUSTOM_USER_NAME
         )

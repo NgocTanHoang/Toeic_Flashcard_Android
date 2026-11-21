@@ -59,7 +59,8 @@ data class DeckProgress(
     val deckName: String,
     val learnedCount: Int,
     val totalCount: Int,
-    val dueCount: Int
+    val dueCount: Int,
+    val topicCount: Int = 0
 )
 
 @Immutable

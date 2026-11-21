@@ -24,11 +24,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
+import com.toeicflashcard.core.ui.glass.LocalAppWindowMetrics
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.core.ui.theme.LocalSm2RatingColors
 import com.toeicflashcard.core.ui.theme.Sm2ColorPair
@@ -41,9 +44,12 @@ fun Sm2RatingBar(
     visible: Boolean,
     intervalPreviews: Map<ReviewQuality, String>,
     onSelectQuality: (ReviewQuality) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isVertical: Boolean = false
 ) {
     val sm2Colors = LocalSm2RatingColors.current
+    val isWide = LocalConfiguration.current.screenWidthDp.dp >= AdaptiveWideBreakpoint ||
+        LocalAppWindowMetrics.current.widthDp >= AdaptiveWideBreakpoint
 
     AnimatedVisibility(
         visible = visible,
@@ -51,25 +57,51 @@ fun Sm2RatingBar(
         exit = fadeOut(),
         modifier = modifier
     ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(7.dp)
-        ) {
-            ReviewQuality.entries.forEach { quality ->
-                val palette = when (quality) {
-                    ReviewQuality.AGAIN -> sm2Colors.again
-                    ReviewQuality.HARD -> sm2Colors.hard
-                    ReviewQuality.GOOD -> sm2Colors.good
-                    ReviewQuality.EASY -> sm2Colors.easy
+        if (isVertical) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                ReviewQuality.entries.forEach { quality ->
+                    val palette = when (quality) {
+                        ReviewQuality.AGAIN -> sm2Colors.again
+                        ReviewQuality.HARD -> sm2Colors.hard
+                        ReviewQuality.GOOD -> sm2Colors.good
+                        ReviewQuality.EASY -> sm2Colors.easy
+                    }
+                    Sm2GlassPillButton(
+                        quality = quality,
+                        label = quality.labelVi,
+                        intervalHint = intervalPreviews[quality].orEmpty(),
+                        colors = palette,
+                        onClick = { onSelectQuality(quality) },
+                        isVerticalLayout = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
                 }
-                Sm2GlassPillButton(
-                    quality = quality,
-                    label = quality.labelVi,
-                    intervalHint = intervalPreviews[quality].orEmpty(),
-                    colors = palette,
-                    onClick = { onSelectQuality(quality) },
-                    modifier = Modifier.weight(1f)
-                )
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(if (isWide) 14.dp else 7.dp)
+            ) {
+                ReviewQuality.entries.forEach { quality ->
+                    val palette = when (quality) {
+                        ReviewQuality.AGAIN -> sm2Colors.again
+                        ReviewQuality.HARD -> sm2Colors.hard
+                        ReviewQuality.GOOD -> sm2Colors.good
+                        ReviewQuality.EASY -> sm2Colors.easy
+                    }
+                    Sm2GlassPillButton(
+                        quality = quality,
+                        label = quality.labelVi,
+                        intervalHint = intervalPreviews[quality].orEmpty(),
+                        colors = palette,
+                        onClick = { onSelectQuality(quality) },
+                        isVerticalLayout = false,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
             }
         }
     }
@@ -82,7 +114,8 @@ private fun Sm2GlassPillButton(
     intervalHint: String,
     colors: Sm2ColorPair,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isVerticalLayout: Boolean = false
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val isDark = glassColors.isDark
@@ -150,6 +183,8 @@ private fun Sm2GlassPillButton(
 
     var labelFontSizeSp by remember(label) { mutableFloatStateOf(13f) }
 
+    val pillHeight = if (isVerticalLayout) 54.dp else 64.dp
+
     LiquidGlassCard(
         onClick = onClick,
         shape = Sm2PillShape,
@@ -157,45 +192,71 @@ private fun Sm2GlassPillButton(
         borderWidth = if (isDark) 0.9.dp else 1.dp,
         borderBrush = borderBrush,
         modifier = modifier
-            .height(64.dp)
+            .height(pillHeight)
             .then(shadowModifier)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .padding(horizontal = 4.dp, vertical = 8.dp),
+                .height(pillHeight)
+                .padding(horizontal = if (isVerticalLayout) 16.dp else 4.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(3.dp)
-            ) {
-                Text(
-                    text = label,
-                    style = MaterialTheme.typography.labelLarge.copy(
-                        fontSize = labelFontSizeSp.sp,
-                        letterSpacing = (-0.2).sp
-                    ),
-                    fontWeight = FontWeight.Bold,
-                    color = labelColor,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis,
-                    onTextLayout = { result ->
-                        if (result.hasVisualOverflow && labelFontSizeSp > 10.5f) {
-                            labelFontSizeSp = (labelFontSizeSp - 0.5f).coerceAtLeast(10.5f)
+            if (isVerticalLayout) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = labelColor,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = intervalHint,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = intervalColor,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            } else {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.labelLarge.copy(
+                            fontSize = labelFontSizeSp.sp,
+                            letterSpacing = (-0.2).sp
+                        ),
+                        fontWeight = FontWeight.Bold,
+                        color = labelColor,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis,
+                        onTextLayout = { result ->
+                            if (result.hasVisualOverflow && labelFontSizeSp > 10.5f) {
+                                labelFontSizeSp = (labelFontSizeSp - 0.5f).coerceAtLeast(10.5f)
+                            }
                         }
-                    }
-                )
-                Text(
-                    text = intervalHint,
-                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
-                    color = intervalColor,
-                    maxLines = 1,
-                    softWrap = false,
-                    overflow = TextOverflow.Ellipsis
-                )
+                    )
+                    Text(
+                        text = intervalHint,
+                        style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                        color = intervalColor,
+                        maxLines = 1,
+                        softWrap = false,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
         }
     }

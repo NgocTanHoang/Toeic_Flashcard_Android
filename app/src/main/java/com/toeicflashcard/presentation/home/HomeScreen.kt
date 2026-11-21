@@ -14,10 +14,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,9 +27,12 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -56,16 +61,24 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.toeicflashcard.core.ui.glass.AdaptiveCardMinWidth
+import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.CollapsibleHeaderSpring
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassSearchCapsule
+import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
+import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
+import com.toeicflashcard.core.ui.glass.gridItemSpacing
+import com.toeicflashcard.core.ui.glass.screenHorizontalPadding
+import com.toeicflashcard.core.ui.glass.sectionVerticalSpacing
 import com.toeicflashcard.core.ui.theme.LocalGlassOpacity
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.domain.model.TopicProgress
@@ -74,6 +87,8 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeChild
+import java.text.NumberFormat
+import java.util.Locale
 import kotlin.math.roundToInt
 
 private val TopicCardShape = RoundedCornerShape(20.dp)
@@ -83,11 +98,13 @@ fun HomeScreen(
     state: HomeUiState,
     topicQuery: String,
     headerHeightDp: Dp,
-    listState: LazyListState,
+    gridState: LazyGridState,
     nestedScrollConnection: NestedScrollConnection,
     onSelectDailyGoal: (Int) -> Unit,
     onStartDueReview: () -> Unit,
-    onSelectTopic: (String) -> Unit
+    onSelectTopic: (String) -> Unit,
+    onOpenStandardQuiz: () -> Unit = {},
+    onOpenListeningQuiz: () -> Unit = {}
 ) {
     val filteredTopics = if (topicQuery.isBlank()) {
         state.topics
@@ -113,109 +130,132 @@ fun HomeScreen(
                 CircularProgressIndicator()
             }
         } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 18.dp,
-                    end = 18.dp,
-                    top = headerHeightDp + 10.dp,
-                    bottom = 108.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                item(
-                    key = "__hero__",
-                    contentType = "hero"
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val isWideHero = maxWidth >= AdaptiveWideBreakpoint
+                val sidePad = adaptiveHorizontalPadding(
+                    availableWidth = maxWidth,
+                    maxContentWidth = MainContentMaxWidth
+                )
+                val gridGap = gridItemSpacing(maxWidth)
+                val sectionGap = sectionVerticalSpacing(maxWidth)
+
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = AdaptiveCardMinWidth),
+                    state = gridState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = sidePad,
+                        end = sidePad,
+                        top = headerHeightDp + 10.dp,
+                        bottom = 108.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(gridGap),
+                    verticalArrangement = Arrangement.spacedBy(gridGap)
                 ) {
-                    HeroGlassDashboard(
-                        dueTodayCount = state.dueTodayCount,
-                        learnedCount = state.learnedCount,
-                        totalCount = state.totalCount,
-                        currentStreak = state.currentStreak,
-                        hasStudiedToday = state.hasStudiedToday,
-                        dailyReviewedCount = state.dailyReviewedCount,
-                        dailyGoal = state.dailyGoal,
-                        onSelectDailyGoal = onSelectDailyGoal,
-                        onStartDueReview = onStartDueReview,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-
-                item(
-                    key = "__section_header__",
-                    contentType = "section_header"
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 4.dp, vertical = 4.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Chủ đề TOEIC",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = if (topicQuery.isBlank()) {
-                                "${state.topics.size} chủ đề"
-                            } else {
-                                "${filteredTopics.size}/${state.topics.size}"
-                            },
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                items(
-                    items = filteredTopics,
-                    key = { it.topic },
-                    contentType = { "topic_card" }
-                ) { topicProgress ->
-                    val onTopicClick = remember(topicProgress.topic, onSelectTopic) {
-                        { onSelectTopic(topicProgress.topic) }
-                    }
-                    TopicGlassCard(
-                        topicProgress = topicProgress,
-                        onClick = onTopicClick,
-                        modifier = Modifier.animateItem()
-                    )
-                }
-
-                if (filteredTopics.isEmpty()) {
                     item(
-                        key = "__empty_search__",
-                        contentType = "empty_search"
+                        key = "__hero__",
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = "hero"
                     ) {
-                        LiquidGlassCard(
-                            shape = TopicCardShape,
-                            modifier = Modifier.fillMaxWidth()
+                        HeroGlassDashboard(
+                            reviewDueCount = state.reviewDueCount,
+                            newWordsCount = state.newWordsCount,
+                            learnedCount = state.learnedCount,
+                            totalCount = state.totalCount,
+                            currentStreak = state.currentStreak,
+                            hasStudiedToday = state.hasStudiedToday,
+                            dailyReviewedCount = state.dailyReviewedCount,
+                            dailyGoal = state.dailyGoal,
+                            continueTopic = state.continueTopic,
+                            isWide = isWideHero,
+                            onSelectDailyGoal = onSelectDailyGoal,
+                            onStartDueReview = onStartDueReview,
+                            onSelectTopic = onSelectTopic,
+                            onOpenStandardQuiz = onOpenStandardQuiz,
+                            onOpenListeningQuiz = onOpenListeningQuiz,
+                            modifier = Modifier.padding(bottom = (sectionGap - gridGap).coerceAtLeast(4.dp))
+                        )
+                    }
+
+                    item(
+                        key = "__section_header__",
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = "section_header"
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 4.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
-                                text = if (topicQuery.isBlank() && state.totalCount == 0) {
-                                    "Bộ từ \"${state.selectedDeckName}\" chưa có từ vựng nào. Hãy sang tab Kho từ bấm nút + để thêm từ mới hoặc chọn bộ từ khác."
+                                text = "Chủ đề TOEIC",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = if (topicQuery.isBlank()) {
+                                    "${state.topics.size} chủ đề"
                                 } else {
-                                    "Không tìm thấy chủ đề phù hợp với \"$topicQuery\"."
+                                    "${filteredTopics.size}/${state.topics.size}"
                                 },
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(18.dp)
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-                }
 
-                item(
-                    key = "__nav_spacer__",
-                    contentType = "nav_spacer"
-                ) {
-                    Spacer(modifier = Modifier.navigationBarsPadding())
+                    items(
+                        items = filteredTopics,
+                        key = { it.topic },
+                        contentType = { "topic_card" }
+                    ) { topicProgress ->
+                        val onTopicClick = remember(topicProgress.topic, onSelectTopic) {
+                            { onSelectTopic(topicProgress.topic) }
+                        }
+                        TopicGlassCard(
+                            topicProgress = topicProgress,
+                            onClick = onTopicClick,
+                            isWide = isWideHero,
+                            modifier = Modifier.animateItem()
+                        )
+                    }
+
+                    if (filteredTopics.isEmpty()) {
+                        item(
+                            key = "__empty_search__",
+                            span = { GridItemSpan(maxLineSpan) },
+                            contentType = "empty_search"
+                        ) {
+                            LiquidGlassCard(
+                                shape = TopicCardShape,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = if (topicQuery.isBlank() && state.totalCount == 0) {
+                                        "Bộ từ \"${state.selectedDeckName}\" chưa có từ vựng nào. Hãy sang tab Kho từ bấm nút + để thêm từ mới hoặc chọn bộ từ khác."
+                                    } else {
+                                        "Không tìm thấy chủ đề phù hợp với \"$topicQuery\"."
+                                    },
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    modifier = Modifier.padding(18.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    item(
+                        key = "__nav_spacer__",
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = "nav_spacer"
+                    ) {
+                        Spacer(modifier = Modifier.navigationBarsPadding())
+                    }
                 }
             }
         }
@@ -237,6 +277,7 @@ fun FloatingGlassHomeHeader(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    val horizPad = screenHorizontalPadding(LocalConfiguration.current.screenWidthDp.dp)
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
     var topRowHeightPx by remember { mutableIntStateOf(0) }
@@ -294,9 +335,11 @@ fun FloatingGlassHomeHeader(
             )
         }
 
-        // Layer 2: Collapsing top bar + Sticky floating frosted search pill
+        // Layer 2: Collapsing top bar + Sticky floating frosted search pill centered at 1100.dp
         Column(
             modifier = Modifier
+                .align(Alignment.TopCenter)
+                .widthIn(max = MainContentMaxWidth)
                 .fillMaxWidth()
                 .statusBarsPadding()
         ) {
@@ -316,7 +359,7 @@ fun FloatingGlassHomeHeader(
                             translationY = -topRowHeightPx * p
                             alpha = (1f - p * 1.35f).coerceIn(0f, 1f)
                         }
-                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                        .padding(horizontal = horizPad, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
@@ -359,7 +402,7 @@ fun FloatingGlassHomeHeader(
                 floatingBlurRadius = 18.dp,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 18.dp, end = 18.dp, bottom = 12.dp)
+                    .padding(start = horizPad, end = horizPad, bottom = 12.dp)
                     .layout { measurable, constraints ->
                         val inset = (extraSideMarginPx * collapseProgressState.value).roundToInt()
                         val narrowedMaxWidth = (constraints.maxWidth - inset * 2).coerceAtLeast(0)
@@ -450,8 +493,9 @@ private fun DeckSwitcherPill(
                 modifier = Modifier.size(18.dp)
             )
         }
+        val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
         Text(
-            text = "SM-2 • $totalCount từ • $topicCount chủ đề",
+            text = "SM-2 • ${viFormatter.format(totalCount)} từ • ${viFormatter.format(topicCount)} chủ đề",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
@@ -501,6 +545,7 @@ private fun ThemeQuickToggleGlassButton(
 private fun TopicGlassCard(
     topicProgress: TopicProgress,
     onClick: () -> Unit,
+    isWide: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
@@ -527,7 +572,12 @@ private fun TopicGlassCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(start = 14.dp, end = 14.dp, top = 14.dp, bottom = 16.dp),
+                    .padding(
+                        start = if (isWide) 18.dp else 14.dp,
+                        end = if (isWide) 18.dp else 14.dp,
+                        top = if (isWide) 18.dp else 14.dp,
+                        bottom = if (isWide) 18.dp else 16.dp
+                    ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {

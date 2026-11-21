@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -57,6 +58,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.toeicflashcard.core.ui.glass.FocusedContentMaxWidth
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.glass.LiquidGlassSheetSurface
@@ -65,6 +67,8 @@ import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.domain.model.DeckProgress
 import com.toeicflashcard.domain.model.VocabularyDecks
 import dev.chrisbanes.haze.HazeState
+import java.text.NumberFormat
+import java.util.Locale
 
 private val DeckCardShape = RoundedCornerShape(20.dp)
 
@@ -142,7 +146,9 @@ private fun DeckSwitcherSheetContent(
     LiquidGlassSheetSurface(
         hazeState = hazeState,
         blurRadius = 20.dp,
+        sheetMaxWidth = FocusedContentMaxWidth,
         modifier = Modifier
+            .widthIn(max = FocusedContentMaxWidth)
             .fillMaxWidth()
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
@@ -300,7 +306,7 @@ private fun DeckOptionGlassCard(
                     }
 
                     Text(
-                        text = subtitleForDeck(deck.deckId),
+                        text = subtitleForDeck(deck),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         maxLines = 1,
@@ -311,9 +317,10 @@ private fun DeckOptionGlassCard(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
+                        val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
                         Text(
                             text = if (deck.totalCount > 0) {
-                                "Đã thuộc ${deck.learnedCount}/${deck.totalCount} ($pct%)"
+                                "Đã thuộc ${viFormatter.format(deck.learnedCount)}/${viFormatter.format(deck.totalCount)} ($pct%)"
                             } else {
                                 "Chưa có từ nào"
                             },
@@ -322,7 +329,7 @@ private fun DeckOptionGlassCard(
                         )
                         if (deck.dueCount > 0) {
                             Text(
-                                text = "• Cần ôn ${deck.dueCount}",
+                                text = "• Cần ôn ${viFormatter.format(deck.dueCount)}",
                                 style = MaterialTheme.typography.labelSmall,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.primary
@@ -362,11 +369,20 @@ private fun iconForDeck(deckId: String): ImageVector = when (deckId) {
     else -> Icons.AutoMirrored.Rounded.LibraryBooks
 }
 
-private fun subtitleForDeck(deckId: String): String = when (deckId) {
-    VocabularyDecks.ALL_ID -> "Gộp toàn bộ giáo trình & từ tự thêm"
-    VocabularyDecks.ESSENTIAL_600_ID -> "50 bài học kinh doanh & giao tiếp TOEIC chuẩn"
-    VocabularyDecks.LEVEL_450_800_ID -> "Từ vựng Part 1–3 & trọng tâm Part 5–6"
-    VocabularyDecks.CORE_775_ID -> "36 chủ đề TOEIC cốt lõi mặc định"
-    VocabularyDecks.CUSTOM_USER_ID -> "Từ vựng tự nhập hoặc nạp qua tệp JSON"
-    else -> ""
+private fun subtitleForDeck(deck: DeckProgress): String {
+    val formatter = NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN"))
+    val wordsStr = formatter.format(deck.totalCount)
+    val topicsStr = formatter.format(deck.topicCount)
+    return when (deck.deckId) {
+        VocabularyDecks.ALL_ID -> "Gộp toàn bộ $topicsStr chủ đề ($wordsStr từ)"
+        VocabularyDecks.ESSENTIAL_600_ID -> "$topicsStr bài học kinh doanh & giao tiếp TOEIC ($wordsStr từ)"
+        VocabularyDecks.LEVEL_450_800_ID -> "$topicsStr chủ đề Part 1–6 trọng tâm ($wordsStr từ)"
+        VocabularyDecks.CORE_775_ID -> "$topicsStr chủ đề TOEIC cốt lõi ($wordsStr từ)"
+        VocabularyDecks.CUSTOM_USER_ID -> if (deck.totalCount > 0) {
+            "$wordsStr từ tự thêm trong $topicsStr chủ đề"
+        } else {
+            "Từ vựng tự nhập hoặc nạp qua tệp JSON"
+        }
+        else -> ""
+    }
 }

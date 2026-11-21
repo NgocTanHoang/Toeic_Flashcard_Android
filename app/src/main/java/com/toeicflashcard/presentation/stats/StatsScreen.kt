@@ -10,6 +10,7 @@ import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -22,8 +23,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -49,6 +53,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -57,10 +62,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.toeicflashcard.core.ui.glass.AdaptiveCardMinWidth
+import com.toeicflashcard.core.ui.glass.AdaptiveTwoColumnRow
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
+import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
+import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
+import com.toeicflashcard.core.ui.glass.cardInnerPadding
+import com.toeicflashcard.core.ui.glass.gridItemSpacing
+import com.toeicflashcard.core.ui.glass.screenHorizontalPadding
 import com.toeicflashcard.core.ui.theme.LocalGlassOpacity
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.core.ui.theme.LocalSm2RatingColors
@@ -69,6 +81,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeChild
+import java.text.NumberFormat
 import java.util.Locale
 
 private val StatsCardShape = RoundedCornerShape(24.dp)
@@ -79,7 +92,7 @@ fun StatsScreen(
     state: StatsUiState,
     viewModel: StatsViewModel,
     headerHeightDp: Dp,
-    listState: LazyListState,
+    gridState: LazyGridState,
     nestedScrollConnection: NestedScrollConnection,
     onReviewHardWords: () -> Unit,
     onShowMessage: (String) -> Unit
@@ -123,58 +136,84 @@ fun StatsScreen(
                 CircularProgressIndicator()
             }
         } else {
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .nestedScroll(nestedScrollConnection),
-                contentPadding = PaddingValues(
-                    start = 18.dp,
-                    end = 18.dp,
-                    top = headerHeightDp + 12.dp,
-                    bottom = 108.dp
-                ),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
-            ) {
-                item(key = "__weekly_chart__", contentType = "weekly_chart") {
-                    WeeklyBarChartGlassCard(
-                        bars = state.last7Days,
-                        dailyGoal = state.dailyGoal,
-                        totalReviews7Days = state.totalReviewsLast7Days,
-                        currentStreak = state.currentStreak
-                    )
-                }
+            BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
+                val sidePad = adaptiveHorizontalPadding(
+                    availableWidth = maxWidth,
+                    maxContentWidth = MainContentMaxWidth
+                )
+                val gridGap = gridItemSpacing(maxWidth)
+                val cardPad = cardInnerPadding(maxWidth)
 
-                if (state.deckStats.isNotEmpty()) {
-                    item(key = "__deck_mastery__", contentType = "deck_mastery") {
-                        DeckMasteryGlassCard(
-                            decks = state.deckStats,
-                            learnedWords = state.learnedWords,
-                            totalWords = state.totalWords
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = AdaptiveCardMinWidth),
+                    state = gridState,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .nestedScroll(nestedScrollConnection),
+                    contentPadding = PaddingValues(
+                        start = sidePad,
+                        end = sidePad,
+                        top = headerHeightDp + 12.dp,
+                        bottom = 108.dp
+                    ),
+                    horizontalArrangement = Arrangement.spacedBy(gridGap),
+                    verticalArrangement = Arrangement.spacedBy(gridGap)
+                ) {
+                    item(
+                        key = "__weekly_chart__",
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = "weekly_chart"
+                    ) {
+                        WeeklyBarChartGlassCard(
+                            bars = state.last7Days,
+                            dailyGoal = state.dailyGoal,
+                            totalReviews7Days = state.totalReviewsLast7Days,
+                            currentStreak = state.currentStreak,
+                            cardPadding = cardPad
                         )
                     }
-                }
 
-                item(key = "__category_mastery__", contentType = "category_mastery") {
-                    CategoryMasteryGlassCard(
-                        categories = state.categoryStats,
-                        learnedWords = state.learnedWords,
-                        totalWords = state.totalWords
-                    )
-                }
+                    if (state.deckStats.isNotEmpty()) {
+                        item(key = "__deck_mastery__", contentType = "deck_mastery") {
+                            DeckMasteryGlassCard(
+                                decks = state.deckStats,
+                                learnedWords = state.learnedWords,
+                                totalWords = state.totalWords,
+                                isWide = false,
+                                cardPadding = cardPad
+                            )
+                        }
+                    }
 
-                item(key = "__hardest_words__", contentType = "hardest_words") {
-                    HardestWordsGlassCard(
-                        hardestWords = state.hardestWords,
-                        hasHardWords = state.hasHardWords,
-                        canStartReview = state.totalWords > 0,
-                        onSpeakWord = viewModel::speakWord,
-                        onReviewHardWords = onReviewHardWords
-                    )
-                }
+                    item(key = "__category_mastery__", contentType = "category_mastery") {
+                        CategoryMasteryGlassCard(
+                            categories = state.categoryStats,
+                            learnedWords = state.learnedWords,
+                            totalWords = state.totalWords,
+                            isWide = false,
+                            cardPadding = cardPad
+                        )
+                    }
 
-                item(key = "__stats_nav_spacer__", contentType = "nav_spacer") {
-                    Spacer(modifier = Modifier.navigationBarsPadding())
+                    item(key = "__hardest_words__", contentType = "hardest_words") {
+                        HardestWordsGlassCard(
+                            hardestWords = state.hardestWords,
+                            hasHardWords = state.hasHardWords,
+                            canStartReview = state.totalWords > 0,
+                            isWide = false,
+                            cardPadding = cardPad,
+                            onSpeakWord = viewModel::speakWord,
+                            onReviewHardWords = onReviewHardWords
+                        )
+                    }
+
+                    item(
+                        key = "__stats_nav_spacer__",
+                        span = { GridItemSpan(maxLineSpan) },
+                        contentType = "nav_spacer"
+                    ) {
+                        Spacer(modifier = Modifier.navigationBarsPadding())
+                    }
                 }
             }
         }
@@ -191,6 +230,7 @@ fun FloatingStatsHeader(
 ) {
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
+    val horizPad = screenHorizontalPadding(LocalConfiguration.current.screenWidthDp.dp)
     val headerTint = if (glassColors.isDark) {
         glassColors.hazeBackground.copy(alpha = glassOpacity)
     } else {
@@ -219,8 +259,10 @@ fun FloatingStatsHeader(
     ) {
         Row(
             modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .widthIn(max = MainContentMaxWidth)
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 12.dp),
+                .padding(horizontal = horizPad, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -234,8 +276,9 @@ fun FloatingStatsHeader(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
+                val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
                 Text(
-                    text = "Đã thuộc $learnedWords/$totalWords từ ($masteryPct%)",
+                    text = "Đã thuộc ${viFormatter.format(learnedWords)}/${viFormatter.format(totalWords)} từ ($masteryPct%)",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -281,7 +324,8 @@ private fun WeeklyBarChartGlassCard(
     bars: List<DailyBarStat>,
     dailyGoal: Int,
     totalReviews7Days: Int,
-    currentStreak: Int
+    currentStreak: Int,
+    cardPadding: Dp = 18.dp
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val maxScale = remember(bars, dailyGoal) {
@@ -306,7 +350,7 @@ private fun WeeklyBarChartGlassCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             Row(
@@ -429,9 +473,12 @@ private fun WeeklyBarChartGlassCard(
 private fun DeckMasteryGlassCard(
     decks: List<DeckMasteryStat>,
     learnedWords: Int,
-    totalWords: Int
+    totalWords: Int,
+    isWide: Boolean,
+    cardPadding: Dp = 18.dp
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    val deckRows = remember(decks) { decks.chunked(2) }
     LiquidGlassCard(
         shape = StatsCardShape,
         modifier = Modifier.fillMaxWidth()
@@ -439,7 +486,7 @@ private fun DeckMasteryGlassCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
@@ -447,6 +494,7 @@ private fun DeckMasteryGlassCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
                 Text(
                     text = "Tiến độ theo Giáo trình / Bộ từ",
                     style = MaterialTheme.typography.titleMedium,
@@ -454,57 +502,28 @@ private fun DeckMasteryGlassCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "$learnedWords/$totalWords",
+                    text = "${viFormatter.format(learnedWords)}/${viFormatter.format(totalWords)}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            decks.forEach { stat ->
-                val ratio = if (stat.totalCount > 0) {
-                    stat.learnedCount.toFloat() / stat.totalCount.toFloat()
-                } else {
-                    0f
-                }
-                val pct = (ratio * 100f).toInt()
-
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(1.dp)
-                        ) {
-                            Text(
-                                text = stat.deckName,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = "Cần ôn: ${stat.dueCount} từ",
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Text(
-                            text = "${stat.learnedCount}/${stat.totalCount} ($pct%)",
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.Medium,
-                            color = if (pct >= 80) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+            if (isWide) {
+                deckRows.forEach { pair ->
+                    AdaptiveTwoColumnRow(
+                        pair = pair,
+                        horizontalSpacing = 16.dp
+                    ) { stat ->
+                        DeckMasteryStatItem(
+                            stat = stat,
+                            trackColor = glassColors.hairlineTrack
                         )
                     }
-
-                    LiquidGlassHairlineProgress(
-                        progress = ratio,
-                        height = 4.dp,
+                }
+            } else {
+                decks.forEach { stat ->
+                    DeckMasteryStatItem(
+                        stat = stat,
                         trackColor = glassColors.hairlineTrack
                     )
                 }
@@ -514,12 +533,71 @@ private fun DeckMasteryGlassCard(
 }
 
 @Composable
+private fun DeckMasteryStatItem(
+    stat: DeckMasteryStat,
+    trackColor: Color
+) {
+    val ratio = if (stat.totalCount > 0) {
+        stat.learnedCount.toFloat() / stat.totalCount.toFloat()
+    } else {
+        0f
+    }
+    val pct = (ratio * 100f).toInt()
+
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp),
+                verticalArrangement = Arrangement.spacedBy(1.dp)
+            ) {
+                Text(
+                    text = stat.deckName,
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
+                Text(
+                    text = "Cần ôn: ${viFormatter.format(stat.dueCount)} từ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            val viStatFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
+            Text(
+                text = "${viStatFormatter.format(stat.learnedCount)}/${viStatFormatter.format(stat.totalCount)} ($pct%)",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Medium,
+                color = if (pct >= 80) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        LiquidGlassHairlineProgress(
+            progress = ratio,
+            height = 4.dp,
+            trackColor = trackColor
+        )
+    }
+}
+
+@Composable
 private fun CategoryMasteryGlassCard(
     categories: List<CategoryMasteryStat>,
     learnedWords: Int,
-    totalWords: Int
+    totalWords: Int,
+    isWide: Boolean,
+    cardPadding: Dp = 18.dp
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    val categoryRows = remember(categories) { categories.chunked(2) }
     LiquidGlassCard(
         shape = StatsCardShape,
         modifier = Modifier.fillMaxWidth()
@@ -527,7 +605,7 @@ private fun CategoryMasteryGlassCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
@@ -535,6 +613,7 @@ private fun CategoryMasteryGlassCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
                 Text(
                     text = "Tỷ lệ thuộc theo nhóm chủ đề",
                     style = MaterialTheme.typography.titleMedium,
@@ -542,52 +621,78 @@ private fun CategoryMasteryGlassCard(
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
-                    text = "$learnedWords/$totalWords",
+                    text = "${viFormatter.format(learnedWords)}/${viFormatter.format(totalWords)}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
-            categories.forEach { stat ->
-                val ratio = if (stat.totalCount > 0) {
-                    stat.learnedCount.toFloat() / stat.totalCount.toFloat()
-                } else {
-                    0f
-                }
-                val pct = (ratio * 100f).toInt()
-
-                Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = stat.category,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(end = 8.dp)
-                        )
-                        Text(
-                            text = "${stat.learnedCount}/${stat.totalCount} ($pct%)",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (pct >= 80) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+            if (isWide) {
+                categoryRows.forEach { pair ->
+                    AdaptiveTwoColumnRow(
+                        pair = pair,
+                        horizontalSpacing = 16.dp
+                    ) { stat ->
+                        CategoryMasteryStatItem(
+                            stat = stat,
+                            trackColor = glassColors.hairlineTrack
                         )
                     }
-
-                    LiquidGlassHairlineProgress(
-                        progress = ratio,
-                        height = 4.dp,
+                }
+            } else {
+                categories.forEach { stat ->
+                    CategoryMasteryStatItem(
+                        stat = stat,
                         trackColor = glassColors.hairlineTrack
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun CategoryMasteryStatItem(
+    stat: CategoryMasteryStat,
+    trackColor: Color
+) {
+    val ratio = if (stat.totalCount > 0) {
+        stat.learnedCount.toFloat() / stat.totalCount.toFloat()
+    } else {
+        0f
+    }
+    val pct = (ratio * 100f).toInt()
+
+    Column(verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = stat.category,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(end = 8.dp)
+            )
+            val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
+            Text(
+                text = "${viFormatter.format(stat.learnedCount)}/${viFormatter.format(stat.totalCount)} ($pct%)",
+                style = MaterialTheme.typography.labelSmall,
+                color = if (pct >= 80) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        LiquidGlassHairlineProgress(
+            progress = ratio,
+            height = 4.dp,
+            trackColor = trackColor
+        )
     }
 }
 
@@ -596,11 +701,13 @@ private fun HardestWordsGlassCard(
     hardestWords: List<VocabularyWord>,
     hasHardWords: Boolean,
     canStartReview: Boolean,
+    isWide: Boolean,
+    cardPadding: Dp = 18.dp,
     onSpeakWord: (String) -> Unit,
     onReviewHardWords: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
-    val sm2Colors = LocalSm2RatingColors.current
+    val hardWordRows = remember(hardestWords) { hardestWords.chunked(2) }
 
     LiquidGlassCard(
         shape = StatsCardShape,
@@ -609,7 +716,7 @@ private fun HardestWordsGlassCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(cardPadding),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
@@ -632,78 +739,27 @@ private fun HardestWordsGlassCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            } else if (isWide) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    hardWordRows.forEach { pair ->
+                        AdaptiveTwoColumnRow(
+                            pair = pair,
+                            horizontalSpacing = 10.dp
+                        ) { word ->
+                            HardestWordRowItem(
+                                word = word,
+                                onSpeakWord = onSpeakWord
+                            )
+                        }
+                    }
+                }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     hardestWords.forEach { word ->
-                        val efText = String.format(Locale.US, "EF %.2f", word.easeFactor)
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(
-                                    if (glassColors.isDark) Color.White.copy(alpha = 0.05f)
-                                    else Color.White.copy(alpha = 0.50f)
-                                )
-                                .padding(horizontal = 12.dp, vertical = 10.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(end = 8.dp),
-                                verticalArrangement = Arrangement.spacedBy(2.dp)
-                            ) {
-                                Text(
-                                    text = word.word,
-                                    style = MaterialTheme.typography.titleSmall,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                                Text(
-                                    text = word.meaningVi,
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis
-                                )
-                            }
-
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
-                            ) {
-                                Box(
-                                    modifier = Modifier
-                                        .clip(CircleShape)
-                                        .background(
-                                            if (word.easeFactor < 2.2f) sm2Colors.again.container
-                                            else sm2Colors.hard.container
-                                        )
-                                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                                ) {
-                                    Text(
-                                        text = efText,
-                                        style = MaterialTheme.typography.labelSmall,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = if (word.easeFactor < 2.2f) sm2Colors.again.content else sm2Colors.hard.content
-                                    )
-                                }
-
-                                LiquidGlassIconButton(
-                                    onClick = { onSpeakWord(word.word) },
-                                    size = 34.dp
-                                ) {
-                                    Icon(
-                                        imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
-                                        contentDescription = "Phát âm ${word.word}",
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
-                            }
-                        }
+                        HardestWordRowItem(
+                            word = word,
+                            onSpeakWord = onSpeakWord
+                        )
                     }
                 }
             }
@@ -735,6 +791,85 @@ private fun HardestWordsGlassCard(
                     text = if (hasHardWords) "Ôn lại nhóm từ khó" else "Luyện nhóm 20 từ đầu tiên",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun HardestWordRowItem(
+    word: VocabularyWord,
+    onSpeakWord: (String) -> Unit
+) {
+    val glassColors = LocalLiquidGlassColors.current
+    val sm2Colors = LocalSm2RatingColors.current
+    val efText = String.format(Locale.US, "EF %.2f", word.easeFactor)
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(14.dp))
+            .background(
+                if (glassColors.isDark) Color.White.copy(alpha = 0.05f)
+                else Color.White.copy(alpha = 0.50f)
+            )
+            .padding(horizontal = 12.dp, vertical = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp)
+        ) {
+            Text(
+                text = word.word,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = word.meaningVi,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .clip(CircleShape)
+                    .background(
+                        if (word.easeFactor < 2.2f) sm2Colors.again.container
+                        else sm2Colors.hard.container
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    text = efText,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = if (word.easeFactor < 2.2f) sm2Colors.again.content else sm2Colors.hard.content
+                )
+            }
+
+            LiquidGlassIconButton(
+                onClick = { onSpeakWord(word.word) },
+                size = 34.dp
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
+                    contentDescription = "Phát âm ${word.word}",
+                    modifier = Modifier.size(16.dp)
                 )
             }
         }

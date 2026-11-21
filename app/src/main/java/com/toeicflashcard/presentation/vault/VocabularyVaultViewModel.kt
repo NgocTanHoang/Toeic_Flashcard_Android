@@ -50,7 +50,7 @@ data class VocabularyVaultUiState(
 class VocabularyVaultViewModel(
     vocabularyRepository: VocabularyRepository,
     userPreferencesRepository: UserPreferencesRepository,
-    createTtsManager: ((TtsFeedback) -> Unit) -> TtsManager,
+    createTtsManager: ((TtsFeedback) -> Unit) -> TtsManager?,
     defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
@@ -60,7 +60,7 @@ class VocabularyVaultViewModel(
     private val _ttsMessages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val ttsMessages: SharedFlow<String> = _ttsMessages.asSharedFlow()
 
-    private val ttsManager: TtsManager = createTtsManager { feedback ->
+    private val ttsManager: TtsManager? = createTtsManager { feedback ->
         emitTtsFeedbackIfError(feedback)
     }
 
@@ -140,12 +140,12 @@ class VocabularyVaultViewModel(
     }
 
     fun speakWord(word: String) {
-        val feedback = ttsManager.speak(word, uiState.value.speechRate)
+        val feedback = ttsManager?.speak(word, uiState.value.speechRate) ?: return
         emitTtsFeedbackIfError(feedback)
     }
 
     fun stopSpeaking() {
-        ttsManager.stop()
+        ttsManager?.stop()
     }
 
     private fun emitTtsFeedbackIfError(feedback: TtsFeedback) {
@@ -158,7 +158,7 @@ class VocabularyVaultViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        ttsManager.shutdown()
+        ttsManager?.shutdown()
     }
 
     companion object {

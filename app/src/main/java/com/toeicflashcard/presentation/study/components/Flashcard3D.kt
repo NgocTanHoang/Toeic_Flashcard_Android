@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -46,7 +47,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
+import com.toeicflashcard.core.ui.glass.LocalAppWindowMetrics
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.domain.model.VocabularyWord
 
@@ -121,6 +124,8 @@ private fun FlashcardFrontFace(
     onSpeakWord: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    val isWide = LocalConfiguration.current.screenWidthDp.dp >= AdaptiveWideBreakpoint ||
+        LocalAppWindowMetrics.current.widthDp >= AdaptiveWideBreakpoint
     val pillBg = if (glassColors.isDark) {
         Color.White.copy(alpha = 0.07f)
     } else {
@@ -132,7 +137,7 @@ private fun FlashcardFrontFace(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(28.dp),
+            .padding(if (isWide) 32.dp else 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -243,6 +248,8 @@ private fun FlashcardBackFace(
     modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    val isWide = LocalConfiguration.current.screenWidthDp.dp >= AdaptiveWideBreakpoint ||
+        LocalAppWindowMetrics.current.widthDp >= AdaptiveWideBreakpoint
     val exampleWashBg = if (glassColors.isDark) {
         Color.White.copy(alpha = 0.055f)
     } else {
@@ -271,7 +278,7 @@ private fun FlashcardBackFace(
                 .fillMaxWidth()
                 .verticalScroll(rememberScrollState())
                 .heightIn(min = minFaceHeight)
-                .padding(horizontal = 26.dp, vertical = 26.dp),
+                .padding(if (isWide) 32.dp else 24.dp),
             verticalArrangement = Arrangement.SpaceBetween
         ) {
             // Zone 1: Word + IPA + POS + compact speaker
@@ -338,7 +345,14 @@ private fun FlashcardBackFace(
                     )
                     Text(
                         text = word.meaningVi,
-                        style = MaterialTheme.typography.headlineMedium,
+                        style = if (isWide) {
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = 24.sp,
+                                lineHeight = 32.sp
+                            )
+                        } else {
+                            MaterialTheme.typography.headlineMedium
+                        },
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface
                     )

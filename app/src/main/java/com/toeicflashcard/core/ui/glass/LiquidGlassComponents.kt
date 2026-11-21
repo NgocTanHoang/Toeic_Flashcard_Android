@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -546,6 +547,7 @@ fun LiquidGlassSheetSurface(
     modifier: Modifier = Modifier,
     hazeState: HazeState? = null,
     blurRadius: Dp = 20.dp,
+    sheetMaxWidth: Dp = FocusedContentMaxWidth,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
@@ -580,7 +582,9 @@ fun LiquidGlassSheetSurface(
     }
 
     Box(
-        modifier = modifier
+        modifier = Modifier
+            .widthIn(max = sheetMaxWidth)
+            .then(modifier)
             .fillMaxWidth()
             .clip(SheetDefaultShape)
             .then(surfaceModifier)

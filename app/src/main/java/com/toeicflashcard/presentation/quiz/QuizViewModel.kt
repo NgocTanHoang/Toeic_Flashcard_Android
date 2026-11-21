@@ -58,6 +58,7 @@ class QuizViewModel(
     }
 
     private var autoAdvanceJob: Job? = null
+    private var lastAdvanceEpochMs = 0L
 
     init {
         val questions = initialCachedQuestions
@@ -195,6 +196,9 @@ class QuizViewModel(
     }
 
     fun nextQuestion() {
+        val now = System.currentTimeMillis()
+        if (now - lastAdvanceEpochMs < NEXT_QUESTION_DEBOUNCE_MS) return
+        lastAdvanceEpochMs = now
         autoAdvanceJob?.cancel()
         ttsManager.stop()
         var wordToSpeak: String? = null
@@ -294,6 +298,7 @@ class QuizViewModel(
         private const val LISTENING_AUTO_ADVANCE_DELAY_MS = 1_600L
         private const val LISTENING_INITIAL_SPEAK_DELAY_MS = 300L
         private const val TTS_WARMUP_DELAY_MS = 350L
+        private const val NEXT_QUESTION_DEBOUNCE_MS = 250L
 
         fun provideFactory(
             topic: String?,

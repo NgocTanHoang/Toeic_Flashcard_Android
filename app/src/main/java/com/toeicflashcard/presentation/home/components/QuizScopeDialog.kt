@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -40,6 +41,7 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.toeicflashcard.core.ui.glass.FocusedContentMaxWidth
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassDialogSurface
@@ -106,6 +108,7 @@ fun QuizScopeDialog(
                 hazeState = hazeState,
                 blurRadius = 20.dp,
                 modifier = Modifier
+                    .widthIn(max = FocusedContentMaxWidth)
                     .fillMaxWidth(0.90f)
                     .clickable(
                         interactionSource = remember { MutableInteractionSource() },

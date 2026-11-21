@@ -74,6 +74,7 @@ class StudyViewModel(
 
     private val requeuedIds = mutableSetOf<Int>()
     private var isSubmitting = false
+    private var lastFlipElapsedMs = 0L
 
     init {
         if (initialCachedQueue == null) {
@@ -163,6 +164,10 @@ class StudyViewModel(
     }
 
     fun flipCard() {
+        if (isSubmitting) return
+        val now = System.currentTimeMillis()
+        if (now - lastFlipElapsedMs < FLIP_DEBOUNCE_MS) return
+        lastFlipElapsedMs = now
         _uiState.update { current ->
             val nextFlipped = !current.isFlipped
             current.copy(
@@ -267,6 +272,7 @@ class StudyViewModel(
 
     companion object {
         private const val TTS_WARMUP_DELAY_MS = 350L
+        private const val FLIP_DEBOUNCE_MS = 200L
 
         fun provideFactory(
             topic: String?,

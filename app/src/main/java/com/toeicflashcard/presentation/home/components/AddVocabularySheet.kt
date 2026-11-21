@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -78,6 +79,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.toeicflashcard.core.ui.glass.FocusedContentMaxWidth
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
@@ -185,7 +187,9 @@ private fun AddVocabularySheetContent(
     LiquidGlassSheetSurface(
         hazeState = hazeState,
         blurRadius = 20.dp,
+        sheetMaxWidth = FocusedContentMaxWidth,
         modifier = Modifier
+            .widthIn(max = FocusedContentMaxWidth)
             .fillMaxWidth()
             .imePadding()
             .clickable(

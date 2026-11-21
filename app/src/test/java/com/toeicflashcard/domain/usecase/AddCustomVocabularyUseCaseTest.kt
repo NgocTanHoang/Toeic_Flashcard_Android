@@ -146,4 +146,50 @@ class AddCustomVocabularyUseCaseTest {
         assertEquals(0, bad.addedCount)
         assertNotNull(bad.errorMessageVi)
     }
+
+    @Test
+    fun `importFromJson supports wrapper object and restores SM-2 progress fields`() = runTest {
+        val now = 1_700_000_000_000L
+        val repo = MutableFakeVocabularyRepository(emptyList())
+        val useCase = AddCustomVocabularyUseCase(repo, FakeTimeProvider(now))
+
+        val payload = """
+            {
+              "words": [
+                {
+                  "word": "benchmark",
+                  "meaningVi": "điểm chuẩn",
+                  "repetitions": 3,
+                  "intervalDays": 15,
+                  "easeFactor": 2.75,
+                  "nextReviewTimestamp": 1701296000000,
+                  "lastReviewedTimestamp": 1700000000000
+                },
+                {
+                  "word": "clamped",
+                  "meaningVi": "giới hạn dưới",
+                  "repetitions": -2,
+                  "intervalDays": -5,
+                  "easeFactor": 0.5
+                }
+              ]
+            }
+        """.trimIndent()
+
+        val result = useCase.importFromJson(payload)
+        assertNull(result.errorMessageVi)
+        assertEquals(2, result.addedCount)
+
+        val restored = repo.stored[0]
+        assertEquals(3, restored.repetitions)
+        assertEquals(15, restored.intervalDays)
+        assertEquals(2.75f, restored.easeFactor, 0.001f)
+        assertEquals(1_701_296_000_000L, restored.nextReviewTimestamp)
+
+        val clamped = repo.stored[1]
+        assertEquals(0, clamped.repetitions)
+        assertEquals(0, clamped.intervalDays)
+        assertEquals(Sm2Scheduler.MIN_EASE_FACTOR, clamped.easeFactor, 0.001f)
+        assertEquals(now, clamped.nextReviewTimestamp)
+    }
 }

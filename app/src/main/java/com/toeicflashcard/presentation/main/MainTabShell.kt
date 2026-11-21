@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.MaterialTheme
@@ -106,25 +107,23 @@ fun MainTabShell(
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
-    val homeListState = rememberLazyListState()
-    val vaultListState = rememberLazyListState()
+    val homeGridState = rememberLazyGridState()
+    val vaultGridState = rememberLazyGridState()
     val practiceListState = rememberLazyListState()
-    val statsListState = rememberLazyListState()
-
-    val activeListState = when (selectedTab) {
-        MainDockTab.HOME -> homeListState
-        MainDockTab.VAULT -> vaultListState
-        MainDockTab.PRACTICE -> practiceListState
-        MainDockTab.STATS -> statsListState
-    }
+    val statsGridState = rememberLazyGridState()
 
     LaunchedEffect(selectedTab) {
         collapsibleHeaderState.expand()
     }
 
-    LaunchedEffect(selectedTab, activeListState) {
+    LaunchedEffect(selectedTab, homeGridState, vaultGridState, practiceListState, statsGridState) {
         snapshotFlow {
-            !activeListState.canScrollForward || !activeListState.canScrollBackward
+            when (selectedTab) {
+                MainDockTab.HOME -> !homeGridState.canScrollForward || !homeGridState.canScrollBackward
+                MainDockTab.VAULT -> !vaultGridState.canScrollForward || !vaultGridState.canScrollBackward
+                MainDockTab.PRACTICE -> !practiceListState.canScrollForward || !practiceListState.canScrollBackward
+                MainDockTab.STATS -> !statsGridState.canScrollForward || !statsGridState.canScrollBackward
+            }
         }
             .distinctUntilChanged()
             .collect { atBoundary ->
@@ -159,11 +158,13 @@ fun MainTabShell(
                             state = homeState,
                             topicQuery = homeQuery,
                             headerHeightDp = homeHeaderHeightDp,
-                            listState = homeListState,
+                            gridState = homeGridState,
                             nestedScrollConnection = collapsibleHeaderState.nestedScrollConnection,
                             onSelectDailyGoal = homeViewModel::updateDailyGoal,
                             onStartDueReview = onStartDueReview,
-                            onSelectTopic = onSelectTopic
+                            onSelectTopic = onSelectTopic,
+                            onOpenStandardQuiz = { quizScopeMode = QuizScopeLaunchMode.STANDARD },
+                            onOpenListeningQuiz = { quizScopeMode = QuizScopeLaunchMode.LISTENING }
                         )
                     }
 
@@ -173,7 +174,7 @@ fun MainTabShell(
                             viewModel = vaultViewModel,
                             query = vaultQuery,
                             headerHeightDp = vaultHeaderHeightDp,
-                            listState = vaultListState,
+                            gridState = vaultGridState,
                             nestedScrollConnection = collapsibleHeaderState.nestedScrollConnection,
                             onShowMessage = { msg ->
                                 coroutineScope.launch {
@@ -198,7 +199,7 @@ fun MainTabShell(
                             state = statsState,
                             viewModel = statsViewModel,
                             headerHeightDp = statsHeaderHeightDp,
-                            listState = statsListState,
+                            gridState = statsGridState,
                             nestedScrollConnection = dockScrollController.nestedScrollConnection,
                             onReviewHardWords = onReviewHardWords,
                             onShowMessage = { msg ->
@@ -251,6 +252,7 @@ fun MainTabShell(
                         totalCount = vaultState.totalCount,
                         query = vaultQuery,
                         selectedFilter = vaultState.selectedFilter,
+                        counts = vaultState.counts,
                         isCollapsed = collapsibleHeaderState.isCollapsed,
                         contentHazeState = contentHazeState,
                         onQueryChange = { next ->
@@ -293,7 +295,7 @@ fun MainTabShell(
             }
         }
 
-        // Layer 2b: Floating Liquid Glass Bottom Dock (sibling outside Modifier.haze)
+        // Layer 2b: Floating Liquid Glass Bottom Dock centered at bottom across all viewports
         LiquidGlassBottomDock(
             selectedTab = selectedTab,
             onSelectTab = { nextTab ->

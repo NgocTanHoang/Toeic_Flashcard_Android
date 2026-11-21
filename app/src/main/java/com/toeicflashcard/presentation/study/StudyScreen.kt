@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -50,19 +52,26 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.AmbientMeshBackground
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
+import com.toeicflashcard.core.ui.glass.LocalAppWindowMetrics
+import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
+import com.toeicflashcard.core.ui.glass.StudyContentMaxWidth
+import com.toeicflashcard.core.ui.glass.WideStudyContentMaxWidth
 import com.toeicflashcard.core.ui.glass.rememberLiquidGlassBorderBrush
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.domain.model.VocabularyWord
@@ -94,6 +103,12 @@ fun StudyScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val lifecycleOwner = LocalLifecycleOwner.current
     val glassColors = LocalLiquidGlassColors.current
+    val windowMetrics = LocalAppWindowMetrics.current
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val isWideScreen = screenWidthDp >= AdaptiveWideBreakpoint || windowMetrics.widthDp >= AdaptiveWideBreakpoint
+    val isLandscapeShort = windowMetrics.isLandscapeShort
+    val studyMaxWidth = if (isWideScreen) WideStudyContentMaxWidth else StudyContentMaxWidth
+    val contentMaxWidth = if (isLandscapeShort) MainContentMaxWidth else studyMaxWidth
 
     LaunchedEffect(viewModel) {
         viewModel.ttsMessages.collect { message ->
@@ -137,6 +152,7 @@ fun StudyScreen(
                 remainingCount = state.queue.size,
                 isPracticeMode = state.isPracticeMode,
                 showCounter = !state.isLoading && !state.isSessionComplete,
+                maxWidth = contentMaxWidth,
                 onBack = {
                     viewModel.stopSpeaking()
                     onNavigateBack()
@@ -172,6 +188,7 @@ fun StudyScreen(
                             totalWords = state.totalInitialCount,
                             requeuedCount = state.requeuedCount,
                             isPracticeMode = state.isPracticeMode,
+                            maxWidth = studyMaxWidth,
                             onBackHome = onNavigateBack,
                             modifier = Modifier
                                 .fillMaxSize()
@@ -188,106 +205,233 @@ fun StudyScreen(
                                 0f
                             }
 
-                            Column(modifier = Modifier.fillMaxSize()) {
-                                LiquidGlassHairlineProgress(
-                                    progress = progress,
-                                    height = 3.dp,
-                                    animated = true,
-                                    modifier = Modifier.padding(horizontal = 20.dp)
-                                )
-
-                                AnimatedContent(
-                                    targetState = StudyCardSlot(
-                                        key = state.cardInstanceKey,
-                                        word = currentWord
-                                    ),
-                                    contentKey = { it.key },
-                                    transitionSpec = {
-                                        val enter = slideInHorizontally(
-                                            animationSpec = tween(
-                                                durationMillis = 320,
-                                                easing = FastOutSlowInEasing
-                                            )
-                                        ) { (it * 0.35f).toInt() } +
-                                            fadeIn(tween(durationMillis = 240)) +
-                                            scaleIn(
-                                                initialScale = 0.94f,
-                                                animationSpec = tween(
-                                                    durationMillis = 320,
-                                                    easing = FastOutSlowInEasing
-                                                )
-                                            )
-                                        val exit = slideOutHorizontally(
-                                            animationSpec = tween(
-                                                durationMillis = 260,
-                                                easing = FastOutSlowInEasing
-                                            )
-                                        ) { -(it * 0.45f).toInt() } +
-                                            fadeOut(tween(durationMillis = 200)) +
-                                            scaleOut(
-                                                targetScale = 0.92f,
-                                                animationSpec = tween(
-                                                    durationMillis = 260,
-                                                    easing = FastOutSlowInEasing
-                                                )
-                                            )
-                                        enter togetherWith exit
-                                    },
-                                    label = "card_transition",
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .weight(1f)
-                                        .padding(horizontal = 20.dp, vertical = 16.dp)
-                                ) { slot ->
-                                    val flipLatch = remember(slot.key) { FlipStateLatch(false) }
-                                    if (slot.key == state.cardInstanceKey) {
-                                        flipLatch.flipped = state.isFlipped
-                                    }
-                                    Flashcard3D(
-                                        word = slot.word,
-                                        isFlipped = flipLatch.flipped,
-                                        onFlip = viewModel::flipCard,
-                                        onSpeakWord = viewModel::speakWord,
-                                        onSpeakExample = viewModel::speakExample,
-                                        modifier = Modifier.fillMaxSize()
+                            Column(
+                                modifier = Modifier.fillMaxSize(),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Box(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    LiquidGlassHairlineProgress(
+                                        progress = progress,
+                                        height = 3.dp,
+                                        animated = true,
+                                        modifier = Modifier
+                                            .widthIn(max = contentMaxWidth)
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 20.dp)
                                     )
                                 }
 
-                                Box(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(horizontal = 18.dp)
-                                        .padding(bottom = 14.dp)
-                                        .heightIn(min = 76.dp),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    AnimatedContent(
-                                        targetState = state.hasRevealedBack,
-                                        transitionSpec = {
-                                            (fadeIn(tween(durationMillis = 220)) +
-                                                slideInVertically(
+                                if (isLandscapeShort) {
+                                    Row(
+                                        modifier = Modifier
+                                            .widthIn(max = MainContentMaxWidth)
+                                            .fillMaxWidth()
+                                            .weight(1f)
+                                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        AnimatedContent(
+                                            targetState = StudyCardSlot(
+                                                key = state.cardInstanceKey,
+                                                word = currentWord
+                                            ),
+                                            contentKey = { it.key },
+                                            transitionSpec = {
+                                                val enter = slideInHorizontally(
+                                                    animationSpec = tween(
+                                                        durationMillis = 320,
+                                                        easing = FastOutSlowInEasing
+                                                    )
+                                                ) { (it * 0.35f).toInt() } +
+                                                    fadeIn(tween(durationMillis = 240)) +
+                                                    scaleIn(
+                                                        initialScale = 0.94f,
+                                                        animationSpec = tween(
+                                                            durationMillis = 320,
+                                                            easing = FastOutSlowInEasing
+                                                        )
+                                                    )
+                                                val exit = slideOutHorizontally(
                                                     animationSpec = tween(
                                                         durationMillis = 260,
                                                         easing = FastOutSlowInEasing
                                                     )
-                                                ) { it / 3 }) togetherWith
-                                                fadeOut(tween(durationMillis = 140))
-                                        },
-                                        label = "rating_bar_transition"
-                                    ) { revealed ->
-                                        if (revealed) {
-                                            Sm2RatingBar(
-                                                visible = true,
-                                                intervalPreviews = state.intervalPreviews,
-                                                onSelectQuality = viewModel::submitRating
+                                                ) { -(it * 0.45f).toInt() } +
+                                                    fadeOut(tween(durationMillis = 200)) +
+                                                    scaleOut(
+                                                        targetScale = 0.92f,
+                                                        animationSpec = tween(
+                                                            durationMillis = 260,
+                                                            easing = FastOutSlowInEasing
+                                                        )
+                                                    )
+                                                enter togetherWith exit
+                                            },
+                                            label = "card_transition_landscape",
+                                            modifier = Modifier
+                                                .weight(1.5f)
+                                                .fillMaxHeight()
+                                        ) { slot ->
+                                            val flipLatch = remember(slot.key) { FlipStateLatch(false) }
+                                            if (slot.key == state.cardInstanceKey) {
+                                                flipLatch.flipped = state.isFlipped
+                                            }
+                                            Flashcard3D(
+                                                word = slot.word,
+                                                isFlipped = flipLatch.flipped,
+                                                onFlip = viewModel::flipCard,
+                                                onSpeakWord = viewModel::speakWord,
+                                                onSpeakExample = viewModel::speakExample,
+                                                modifier = Modifier.fillMaxSize()
                                             )
-                                        } else {
-                                            Text(
-                                                text = "Chạm vào thẻ để xem nghĩa và chọn mức độ ghi nhớ",
-                                                style = MaterialTheme.typography.bodyMedium,
-                                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                textAlign = TextAlign.Center
+                                        }
+
+                                        Box(
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .fillMaxHeight(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            AnimatedContent(
+                                                targetState = state.hasRevealedBack,
+                                                transitionSpec = {
+                                                    fadeIn(tween(durationMillis = 220)) togetherWith
+                                                        fadeOut(tween(durationMillis = 140))
+                                                },
+                                                label = "rating_bar_transition_landscape"
+                                            ) { revealed ->
+                                                if (revealed) {
+                                                    Sm2RatingBar(
+                                                        visible = true,
+                                                        intervalPreviews = state.intervalPreviews,
+                                                        onSelectQuality = viewModel::submitRating,
+                                                        isVertical = true
+                                                    )
+                                                } else {
+                                                    Text(
+                                                        text = "Chạm vào thẻ để xem nghĩa và chọn mức độ ghi nhớ",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        textAlign = TextAlign.Center,
+                                                        modifier = Modifier.padding(horizontal = 12.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                } else {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .weight(1f),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        AnimatedContent(
+                                            targetState = StudyCardSlot(
+                                                key = state.cardInstanceKey,
+                                                word = currentWord
+                                            ),
+                                            contentKey = { it.key },
+                                            transitionSpec = {
+                                                val enter = slideInHorizontally(
+                                                    animationSpec = tween(
+                                                        durationMillis = 320,
+                                                        easing = FastOutSlowInEasing
+                                                    )
+                                                ) { (it * 0.35f).toInt() } +
+                                                    fadeIn(tween(durationMillis = 240)) +
+                                                    scaleIn(
+                                                        initialScale = 0.94f,
+                                                        animationSpec = tween(
+                                                            durationMillis = 320,
+                                                            easing = FastOutSlowInEasing
+                                                        )
+                                                    )
+                                                val exit = slideOutHorizontally(
+                                                    animationSpec = tween(
+                                                        durationMillis = 260,
+                                                        easing = FastOutSlowInEasing
+                                                    )
+                                                ) { -(it * 0.45f).toInt() } +
+                                                    fadeOut(tween(durationMillis = 200)) +
+                                                    scaleOut(
+                                                        targetScale = 0.92f,
+                                                        animationSpec = tween(
+                                                            durationMillis = 260,
+                                                            easing = FastOutSlowInEasing
+                                                        )
+                                                    )
+                                                enter togetherWith exit
+                                            },
+                                            label = "card_transition",
+                                            modifier = Modifier
+                                                .widthIn(max = studyMaxWidth)
+                                                .fillMaxWidth()
+                                                .fillMaxHeight()
+                                                .padding(horizontal = 20.dp, vertical = 16.dp)
+                                        ) { slot ->
+                                            val flipLatch = remember(slot.key) { FlipStateLatch(false) }
+                                            if (slot.key == state.cardInstanceKey) {
+                                                flipLatch.flipped = state.isFlipped
+                                            }
+                                            Flashcard3D(
+                                                word = slot.word,
+                                                isFlipped = flipLatch.flipped,
+                                                onFlip = viewModel::flipCard,
+                                                onSpeakWord = viewModel::speakWord,
+                                                onSpeakExample = viewModel::speakExample,
+                                                modifier = Modifier.fillMaxSize()
                                             )
+                                        }
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(horizontal = 18.dp)
+                                            .padding(bottom = 14.dp)
+                                            .heightIn(min = 76.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Box(
+                                            modifier = Modifier
+                                                .widthIn(max = studyMaxWidth)
+                                                .fillMaxWidth(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            AnimatedContent(
+                                                targetState = state.hasRevealedBack,
+                                                transitionSpec = {
+                                                    (fadeIn(tween(durationMillis = 220)) +
+                                                        slideInVertically(
+                                                            animationSpec = tween(
+                                                                durationMillis = 260,
+                                                                easing = FastOutSlowInEasing
+                                                            )
+                                                        ) { it / 3 }) togetherWith
+                                                        fadeOut(tween(durationMillis = 140))
+                                                },
+                                                label = "rating_bar_transition"
+                                            ) { revealed ->
+                                                if (revealed) {
+                                                    Sm2RatingBar(
+                                                        visible = true,
+                                                        intervalPreviews = state.intervalPreviews,
+                                                        onSelectQuality = viewModel::submitRating
+                                                    )
+                                                } else {
+                                                    Text(
+                                                        text = "Chạm vào thẻ để xem nghĩa và chọn mức độ ghi nhớ",
+                                                        style = MaterialTheme.typography.bodyMedium,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                        textAlign = TextAlign.Center
+                                                    )
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -329,6 +473,7 @@ private fun StudyTopBar(
     remainingCount: Int,
     isPracticeMode: Boolean,
     showCounter: Boolean,
+    maxWidth: Dp = StudyContentMaxWidth,
     onBack: () -> Unit,
     onToggleSpeechRate: () -> Unit
 ) {
@@ -336,13 +481,18 @@ private fun StudyTopBar(
     val rateLabel = if (speechRate > 0.85f) "1.0x" else "0.75x"
     val isSlow = speechRate <= 0.85f
 
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 18.dp, vertical = 10.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    Box(
+        modifier = Modifier.fillMaxWidth(),
+        contentAlignment = Alignment.Center
     ) {
+        Row(
+            modifier = Modifier
+                .widthIn(max = maxWidth)
+                .fillMaxWidth()
+                .padding(horizontal = 18.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
         LiquidGlassIconButton(
             onClick = onBack,
             size = 42.dp
@@ -413,6 +563,7 @@ private fun StudyTopBar(
             )
         }
     }
+    }
 }
 
 @Composable
@@ -420,6 +571,7 @@ private fun SessionCompleteContent(
     totalWords: Int,
     requeuedCount: Int,
     isPracticeMode: Boolean,
+    maxWidth: Dp = StudyContentMaxWidth,
     onBackHome: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -429,7 +581,9 @@ private fun SessionCompleteContent(
         contentAlignment = Alignment.Center
     ) {
         LiquidGlassCard(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .widthIn(max = maxWidth)
+                .fillMaxWidth(),
             shape = CompleteCardShape,
             containerColor = glassColors.elevatedGlassFill
         ) {

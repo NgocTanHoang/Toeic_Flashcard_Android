@@ -83,4 +83,20 @@ class GitHubUpdateCheckerTest {
         val result = GitHubUpdateChecker.parseReleaseResponse(json, "1.2.0")
         assertEquals(UpdateCheckResult.UpToDate("1.2.0"), result)
     }
+
+    @Test
+    fun `parseReleaseResponse handles malformed json, empty tag, and missing html_url gracefully`() {
+        val malformed = GitHubUpdateChecker.parseReleaseResponse("{bad-json", "1.2.0")
+        assertTrue(malformed is UpdateCheckResult.Error)
+
+        val emptyTag = GitHubUpdateChecker.parseReleaseResponse("""{"tag_name": ""}""", "1.2.0")
+        assertEquals(UpdateCheckResult.UpToDate("1.2.0"), emptyTag)
+
+        val noHtmlOrAssets = GitHubUpdateChecker.parseReleaseResponse("""{"tag_name": "v2.0.0"}""", "1.2.0")
+        assertTrue(noHtmlOrAssets is UpdateCheckResult.UpdateAvailable)
+        assertEquals(
+            "https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest",
+            (noHtmlOrAssets as UpdateCheckResult.UpdateAvailable).downloadUrl
+        )
+    }
 }

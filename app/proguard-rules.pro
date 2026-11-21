@@ -22,3 +22,12 @@
 -keep class com.toeicflashcard.data.worker.DailyReminderWorker {
     public <init>(android.content.Context, androidx.work.WorkerParameters);
 }
+
+# Preserve enum values()/valueOf() used in Compose state & serialization
+-keepclassmembers enum * {
+    public static **[] values();
+    public static ** valueOf(java.lang.String);
+}
+
+# Haze blur library
+-keep class dev.chrisbanes.haze.** { *; }

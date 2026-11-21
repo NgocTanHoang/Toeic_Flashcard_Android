@@ -5,30 +5,25 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
 
-    <!-- Back Flashcard Silhouette (+10 deg) -->
+    <!-- Back Flashcard Silhouette (+8 deg) -->
     <group
-        android:pivotX="57.5"
-        android:pivotY="55"
-        android:rotation="10">
+        android:pivotX="57"
+        android:pivotY="54"
+        android:rotation="8">
         <path
-            android:pathData="M48,32 L67,32 A8.5,8.5 0 0,1 75.5,40.5 L75.5,69.5 A8.5,8.5 0 0,1 67,78 L48,78 A8.5,8.5 0 0,1 39.5,69.5 L39.5,40.5 A8.5,8.5 0 0,1 48,32 Z"
-            android:strokeWidth="2.4"
+            android:pathData="M45,30 L67,30 A8,8 0 0,1 75,38 L75,70 A8,8 0 0,1 67,78 L45,78 A8,8 0 0,1 37,70 L37,38 A8,8 0 0,1 45,30 Z"
+            android:strokeWidth="2.2"
             android:strokeColor="#000000" />
     </group>
 
-    <!-- Front Flashcard with punched T monogram and SM-2 mastery pill bar (-6 deg) -->
+    <!-- Front Flashcard with punched T monogram and SM-2 progress bar (-4 deg) -->
     <group
-        android:pivotX="50"
-        android:pivotY="53"
-        android:rotation="-6">
+        android:pivotX="51"
+        android:pivotY="54"
+        android:rotation="-4">
         <path
             android:fillColor="#000000"
             android:fillType="evenOdd"
-            android:pathData="M39.5,28 L60.5,28 A9.5,9.5 0 0,1 70,37.5 L70,68.5 A9.5,9.5 0 0,1 60.5,78 L39.5,78 A9.5,9.5 0 0,1 30,68.5 L30,37.5 A9.5,9.5 0 0,1 39.5,28 Z M41.5,38.5 A3,3 0 0,0 38.5,41.5 A3,3 0 0,0 41.5,44.5 L47,44.5 L47,60.5 A3,3 0 0,0 50,63.5 A3,3 0 0,0 53,60.5 L53,44.5 L58.5,44.5 A3,3 0 0,0 61.5,41.5 A3,3 0 0,0 58.5,38.5 Z M41.75,68.5 A1.75,1.75 0 0,0 40,70.25 A1.75,1.75 0 0,0 41.75,72 L58.25,72 A1.75,1.75 0 0,0 60,70.25 A1.75,1.75 0 0,0 58.25,68.5 Z" />
+            android:pathData="M39.5,29.5 L61.5,29.5 A8.5,8.5 0 0,1 70,38 L70,69.5 A8.5,8.5 0 0,1 61.5,78 L39.5,78 A8.5,8.5 0 0,1 31,69.5 L31,38 A8.5,8.5 0 0,1 39.5,29.5 Z M41.5,40.5 A2.6,2.6 0 0,0 38.9,43.1 A2.6,2.6 0 0,0 41.5,45.7 L47.8,45.7 L47.8,61.3 A2.7,2.7 0 0,0 50.5,64 A2.7,2.7 0 0,0 53.2,61.3 L53.2,45.7 L59.5,45.7 A2.6,2.6 0 0,0 62.1,43.1 A2.6,2.6 0 0,0 59.5,40.5 Z M39.5,69.5 A1.5,1.5 0 0,0 38,71 A1.5,1.5 0 0,0 39.5,72.5 L61.5,72.5 A1.5,1.5 0 0,0 63,71 A1.5,1.5 0 0,0 61.5,69.5 Z" />
     </group>
-
-    <!-- 4-Point Mastery Sparkle -->
-    <path
-        android:fillColor="#000000"
-        android:pathData="M73.5,23.3 Q74.3,28.7 79.7,29.5 Q74.3,30.3 73.5,35.7 Q72.7,30.3 67.3,29.5 Q72.7,28.7 73.5,23.3 Z" />
 </vector>

@@ -18,3 +18,10 @@ node_modules/
 *.keystore
 keystore.properties
 keystore/
+
+# Local Screenshots & Promo Scratch Directories
+screenshots/
+screenshots_responsive/
+promo_video/
+promo_vertical_30s/
+*.apk
