@@ -1,13 +1,69 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <path
-        android:fillColor="#3F51B5"
-        android:pathData="M0,0h108v108h-108z" />
-    <path
-        android:fillColor="#2E3F9E"
-        android:pathData="M0,58 Q36,42 72,62 T108,52 L108,108 L0,108 Z" />
+
+    <!-- Layer 1: Deep Obsidian Base -->
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="0"
+                android:startY="0"
+                android:endX="108"
+                android:endY="108">
+                <item android:offset="0.0" android:color="#FF0F182D" />
+                <item android:offset="0.52" android:color="#FF090C14" />
+                <item android:offset="1.0" android:color="#FF07161B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Layer 2: Top-Left Liquid Blue Ambient Aura -->
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="26"
+                android:centerY="24"
+                android:gradientRadius="62">
+                <item android:offset="0.0" android:color="#6689B4FA" />
+                <item android:offset="0.48" android:color="#2289B4FA" />
+                <item android:offset="1.0" android:color="#00090B10" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Layer 3: Bottom-Right SM-2 Emerald Ambient Aura -->
+    <path android:pathData="M0,0 L108,0 L108,108 L0,108 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="84"
+                android:centerY="84"
+                android:gradientRadius="60">
+                <item android:offset="0.0" android:color="#5834D399" />
+                <item android:offset="0.48" android:color="#1C34D399" />
+                <item android:offset="1.0" android:color="#00090B10" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Layer 4: Subtle Top Glass Sheen -->
+    <path android:pathData="M0,0 L108,0 L108,50 Q54,36 0,52 Z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="54"
+                android:startY="0"
+                android:endX="54"
+                android:endY="52">
+                <item android:offset="0.0" android:color="#1AFFFFFF" />
+                <item android:offset="1.0" android:color="#00FFFFFF" />
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>

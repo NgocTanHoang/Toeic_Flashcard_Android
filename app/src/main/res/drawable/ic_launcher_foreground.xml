@@ -1,19 +1,166 @@
 <?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+
+    <!-- Layer 1: Grounded Ambient Drop Shadow -->
+    <path android:pathData="M23,59 a31,31 0 1,0 62,0 a31,31 0 1,0 -62,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="54"
+                android:centerY="59"
+                android:gradientRadius="31">
+                <item android:offset="0.0" android:color="#8802050B" />
+                <item android:offset="0.62" android:color="#3302050B" />
+                <item android:offset="1.0" android:color="#0002050B" />
+            </gradient>
+        </aapt:attr>
+    </path>
+
+    <!-- Layer 2: Back Flashcard (Liquid Blue to SM-2 Emerald Glass, tilted +10 deg) -->
+    <group
+        android:pivotX="57.5"
+        android:pivotY="55"
+        android:rotation="10">
+        <path
+            android:pathData="M48,32 L67,32 A8.5,8.5 0 0,1 75.5,40.5 L75.5,69.5 A8.5,8.5 0 0,1 67,78 L48,78 A8.5,8.5 0 0,1 39.5,69.5 L39.5,40.5 A8.5,8.5 0 0,1 48,32 Z"
+            android:strokeWidth="1.2"
+            android:strokeColor="#99E8FFF7">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="39.5"
+                    android:startY="32"
+                    android:endX="75.5"
+                    android:endY="78">
+                    <item android:offset="0.0" android:color="#FF9CC4FF" />
+                    <item android:offset="0.45" android:color="#FF52A8EE" />
+                    <item android:offset="1.0" android:color="#FF34D399" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <path android:pathData="M48,32.6 L67,32.6 A7.9,7.9 0 0,1 74.9,40.5 L74.9,48.5 Q57.5,42 40.1,51.5 L40.1,40.5 A7.9,7.9 0 0,1 48,32.6 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="57.5"
+                    android:startY="32.6"
+                    android:endX="57.5"
+                    android:endY="51.5">
+                    <item android:offset="0.0" android:color="#44FFFFFF" />
+                    <item android:offset="1.0" android:color="#00FFFFFF" />
+                </gradient>
+            </aapt:attr>
+        </path>
+    </group>
+
+    <!-- Layer 3: Front Frosted Liquid Glass Flashcard (tilted -6 deg) -->
+    <group
+        android:pivotX="50"
+        android:pivotY="53"
+        android:rotation="-6">
+        <!-- Soft cast shadow onto back card -->
+        <path
+            android:fillColor="#52030712"
+            android:pathData="M41.5,30.6 L62.5,30.6 A9.5,9.5 0 0,1 72,40.1 L72,71.1 A9.5,9.5 0 0,1 62.5,80.6 L41.5,80.6 A9.5,9.5 0 0,1 32,71.1 L32,40.1 A9.5,9.5 0 0,1 41.5,30.6 Z" />
+
+        <!-- Front frosted slab with specular chamfered rim stroke -->
+        <path
+            android:pathData="M39.5,28 L60.5,28 A9.5,9.5 0 0,1 70,37.5 L70,68.5 A9.5,9.5 0 0,1 60.5,78 L39.5,78 A9.5,9.5 0 0,1 30,68.5 L30,37.5 A9.5,9.5 0 0,1 39.5,28 Z"
+            android:strokeWidth="1.8">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="30"
+                    android:startY="28"
+                    android:endX="70"
+                    android:endY="78">
+                    <item android:offset="0.0" android:color="#F2243352" />
+                    <item android:offset="0.55" android:color="#F6151E32" />
+                    <item android:offset="1.0" android:color="#FA0E1525" />
+                </gradient>
+            </aapt:attr>
+            <aapt:attr name="android:strokeColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="30"
+                    android:startY="28"
+                    android:endX="70"
+                    android:endY="78">
+                    <item android:offset="0.0" android:color="#FAFFFFFF" />
+                    <item android:offset="0.48" android:color="#E689B4FA" />
+                    <item android:offset="1.0" android:color="#E034D399" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Diagonal frosted glass reflection -->
+        <path android:pathData="M39.5,28.9 L60.5,28.9 A8.6,8.6 0 0,1 69.1,37.5 L69.1,45.5 C58,43.5 43,53 30.9,62.5 L30.9,37.5 A8.6,8.6 0 0,1 39.5,28.9 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="30"
+                    android:startY="28"
+                    android:endX="58"
+                    android:endY="60">
+                    <item android:offset="0.0" android:color="#3DFFFFFF" />
+                    <item android:offset="0.55" android:color="#1289B4FA" />
+                    <item android:offset="1.0" android:color="#0089B4FA" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- Bold Geometric T Monogram: crossbar + vertical stem -->
+        <path android:pathData="M41.5,38.5 L58.5,38.5 A3,3 0 0,1 61.5,41.5 A3,3 0 0,1 58.5,44.5 L41.5,44.5 A3,3 0 0,1 38.5,41.5 A3,3 0 0,1 41.5,38.5 Z M50,41.5 A3,3 0 0,1 53,44.5 L53,60.5 A3,3 0 0,1 50,63.5 A3,3 0 0,1 47,60.5 L47,44.5 A3,3 0 0,1 50,41.5 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="50"
+                    android:startY="38.5"
+                    android:endX="50"
+                    android:endY="63.5">
+                    <item android:offset="0.0" android:color="#FFFFFFFF" />
+                    <item android:offset="1.0" android:color="#FFE2EEFF" />
+                </gradient>
+            </aapt:attr>
+        </path>
+
+        <!-- SM-2 Mastery Glow Pill Bar -->
+        <path android:pathData="M41.75,68.5 L58.25,68.5 A1.75,1.75 0 0,1 60,70.25 A1.75,1.75 0 0,1 58.25,72 L41.75,72 A1.75,1.75 0 0,1 40,70.25 A1.75,1.75 0 0,1 41.75,68.5 Z">
+            <aapt:attr name="android:fillColor">
+                <gradient
+                    android:type="linear"
+                    android:startX="40"
+                    android:startY="70"
+                    android:endX="60"
+                    android:endY="70">
+                    <item android:offset="0.0" android:color="#FF89B4FA" />
+                    <item android:offset="1.0" android:color="#FF34D399" />
+                </gradient>
+            </aapt:attr>
+        </path>
+    </group>
+
+    <!-- Layer 4: 4-Point Luminous Mastery Sparkle -->
+    <path android:pathData="M64.5,29.5 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="radial"
+                android:centerX="73.5"
+                android:centerY="29.5"
+                android:gradientRadius="9">
+                <item android:offset="0.0" android:color="#66FFFFFF" />
+                <item android:offset="0.45" android:color="#2434D399" />
+                <item android:offset="1.0" android:color="#0034D399" />
+            </gradient>
+        </aapt:attr>
+    </path>
     <path
-        android:fillColor="#E8ECFF"
-        android:pathData="M34,30h40a6,6 0 0,1 6,6v36a6,6 0 0,1 -6,6h-40a6,6 0 0,1 -6,-6v-36a6,6 0 0,1 6,-6z" />
-    <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M30,26h40a6,6 0 0,1 6,6v36a6,6 0 0,1 -6,6h-40a6,6 0 0,1 -6,-6v-36a6,6 0 0,1 6,-6z" />
-    <path
-        android:fillColor="#3F51B5"
-        android:pathData="M35,38h28v4h-28zM35,48h20v4h-20z" />
-    <path
-        android:fillColor="#00897B"
-        android:pathData="M35,58h14v4h-14z" />
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M73.5,23.3 Q74.3,28.7 79.7,29.5 Q74.3,30.3 73.5,35.7 Q72.7,30.3 67.3,29.5 Q72.7,28.7 73.5,23.3 Z" />
 </vector>
