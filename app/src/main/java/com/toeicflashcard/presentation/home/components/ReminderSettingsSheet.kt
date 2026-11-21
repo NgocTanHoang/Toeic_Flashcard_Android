@@ -49,7 +49,9 @@ import androidx.compose.material.icons.rounded.Opacity
 import androidx.compose.material.icons.rounded.Palette
 import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Schedule
+import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -66,7 +68,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -82,7 +86,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import com.toeicflashcard.BuildConfig
 import com.toeicflashcard.core.notification.ReminderNotificationHelper
+import com.toeicflashcard.core.update.GitHubUpdateChecker
+import com.toeicflashcard.core.update.UpdateCheckResult
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassDialogSurface
@@ -214,10 +221,13 @@ private fun ReminderSettingsSheetContent(
     onSaveReminderSettings: (enabled: Boolean, hour: Int, minute: Int) -> Unit
 ) {
     val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
     val defaultOpacity = UserPreferences.defaultGlassOpacity(glassColors.isDark)
     var permissionDeniedNotice by remember { mutableStateOf(false) }
+    var isCheckingUpdate by remember { mutableStateOf(false) }
+    var updateCheckResult by remember { mutableStateOf<UpdateCheckResult?>(null) }
 
     var sliderValue by remember { mutableFloatStateOf(glassOpacity) }
     var isDraggingSlider by remember { mutableStateOf(false) }
@@ -563,6 +573,109 @@ private fun ReminderSettingsSheetContent(
                         ) {
                             Text("Mở Cài đặt thông báo")
                         }
+                    }
+                }
+            }
+
+            // Section 4: Opt-in App Version & GitHub Releases Update Check
+            LiquidGlassCard(
+                modifier = Modifier.fillMaxWidth(),
+                shape = SheetRowCardShape,
+                containerColor = rowGlassFill
+            ) {
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(
+                                enabled = !isCheckingUpdate,
+                                role = Role.Button
+                            ) {
+                                isCheckingUpdate = true
+                                coroutineScope.launch {
+                                    val result = GitHubUpdateChecker.checkForUpdates()
+                                    updateCheckResult = result
+                                    isCheckingUpdate = false
+                                    if (result is UpdateCheckResult.UpdateAvailable) {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(result.downloadUrl)).apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        runCatching { context.startActivity(intent) }
+                                    }
+                                }
+                            }
+                            .padding(horizontal = 16.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.SystemUpdate,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Phiên bản v${BuildConfig.VERSION_NAME} • Kiểm tra cập nhật",
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        if (isCheckingUpdate) {
+                            Spacer(modifier = Modifier.width(10.dp))
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                strokeWidth = 2.dp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                    }
+
+                    when (val result = updateCheckResult) {
+                        is UpdateCheckResult.UpdateAvailable -> {
+                            Text(
+                                text = "Có bản mới v${result.latestVersion} • Chạm để tải APK",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable {
+                                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(result.downloadUrl)).apply {
+                                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                        }
+                                        runCatching { context.startActivity(intent) }
+                                    }
+                                    .padding(start = 42.dp, end = 16.dp, bottom = 12.dp)
+                            )
+                        }
+
+                        is UpdateCheckResult.UpToDate -> {
+                            Text(
+                                text = "Đã là phiên bản mới nhất (v${result.currentVersion})",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = Color(0xFF10B981),
+                                modifier = Modifier.padding(start = 42.dp, end = 16.dp, bottom = 12.dp)
+                            )
+                        }
+
+                        is UpdateCheckResult.Error -> {
+                            Text(
+                                text = result.message,
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(start = 42.dp, end = 16.dp, bottom = 12.dp)
+                            )
+                        }
+
+                        null -> Unit
                     }
                 }
             }

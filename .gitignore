@@ -12,3 +12,9 @@ app/build
 .kotlin/
 .vscode/
 node_modules/
+
+# Release Signing Secrets
+*.jks
+*.keystore
+keystore.properties
+keystore/
