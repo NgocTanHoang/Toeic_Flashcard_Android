@@ -2,7 +2,7 @@
 
 # TOEIC Flashcard
 
-**Ứng dụng học từ vựng TOEIC đa giác quan & ngoại tuyến 100% trên Android — thiết kế Apple Liquid Glass, thuật toán lặp lại ngắt quãng SM-2 và hiệu năng 120Hz Adaptive Refresh Rate.**
+**Ứng dụng học từ vựng TOEIC đa giác quan & ngoại tuyến 100% trên Android (Phone, Foldable & Tablet) — thiết kế Apple Liquid Glass, thuật toán lặp lại ngắt quãng SM-2 và hiệu năng 120Hz Adaptive Refresh Rate.**
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2024.12.01-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
@@ -10,16 +10,16 @@
 [![Room SQLite](https://img.shields.io/badge/Room_SQLite-2.6.1_(v3)-0F9D58?style=flat-square)](https://developer.android.com/training/data-storage/room)
 [![Vocabulary](https://img.shields.io/badge/T%E1%BB%AB_v%E1%BB%B1ng-2.154%2B_t%E1%BB%AB_%E2%80%A2_104_ch%E1%BB%A7_%C4%91%E1%BB%81-2563EB?style=flat-square)](#-kho-d%E1%BB%AF-li%E1%BB%87u-2154-t%E1%BB%AB-v%E1%BB%B1ng)
 [![Refresh Rate](https://img.shields.io/badge/Render-120Hz_Adaptive_RR-0D9488?style=flat-square)](#-hi%E1%BB%87u-n%C4%83ng-120hz-arr--h%C3%A0nh-vi-cu%E1%BB%99n-ios)
-[![Download APK](https://img.shields.io/badge/Download_APK-v1.2.0-10B981?style=flat-square&logo=android&logoColor=white)](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest)
+[![Download APK](https://img.shields.io/badge/Download_APK-v1.3.0-10B981?style=flat-square&logo=android&logoColor=white)](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest)
 
 <br />
 
-[Tải APK v1.2.0](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest) •
-[Video 30s & App Icon](#-video-giới-thiệu-30s--60fps--app-icon-liquid-glass) •
+[Tải APK v1.3.0](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest) •
+[Video 30s & App Icon v2](#-video-giới-thiệu-30s--60fps--app-icon-liquid-glass-v2) •
 [Tính năng nổi bật](#-tính-năng-nổi-bật) •
+[Adaptive Tablet & Fold](#-giao-diện-thích-ứng-phone--foldable--tablet) •
 [Thư viện giao diện](#-thư-viện-giao-diện-thực-tế-light-mode-vs-dark-mode) •
-[Kho dữ liệu 2.154+ từ](#-kho-dữ-liệu-2154-từ-vựng) •
-[Kiến trúc & Công nghệ](#-kiến-trúc-hệ-thống--công-nghệ) •
+[Tài liệu kỹ thuật](#-tài-liệu-kiến-trúc--kỹ-thuật) •
 [Build & Kiểm thử](#-hướng-dẫn-build-kiểm-thử--import-json)
 
 <br />
@@ -43,12 +43,12 @@
 
 ---
 
-## 🎬 Video giới thiệu (30s • 60fps) & App Icon Liquid Glass
+## 🎬 Video giới thiệu (30s • 60fps) & App Icon Liquid Glass v2
 
 <table>
   <tr>
     <th width="36%">Video Promo Showreel (1080×1920 • 60fps)</th>
-    <th width="64%">App Icon Adaptive Liquid Glass (API 24–35)</th>
+    <th width="64%">App Icon Adaptive v2 (API 24–35)</th>
   </tr>
   <tr>
     <td align="center">
@@ -59,9 +59,9 @@
       <sub><a href="media/toeic_flashcard_promo_30s.mp4"><b>▶ Xem / Tải Video MP4 60fps (30s)</b></a></sub>
     </td>
     <td align="center">
-      <img src="media/app_icon_showcase.png" width="460" alt="App Icon Liquid Glass Showcase" />
+      <img src="media/app_icon_preview_v2.png" width="320" alt="App Icon Adaptive v2" />
       <br />
-      <sub>Adaptive Icon 4 lớp (Squircle / Circle / Rounded Square / Monochrome API 33+) đồng bộ toàn ứng dụng</sub>
+      <sub>Adaptive Icon v2 sắc nét (loại bỏ ngôi sao AI), hỗ trợ Squircle / Circle / Rounded Square / Monochrome API 33+</sub>
     </td>
   </tr>
 </table>
@@ -77,7 +77,21 @@
 - **Hệ sinh thái Apple Liquid Glass đa chủ đề:** Hỗ trợ chế độ **Hệ thống / Sáng (Light Ice Mesh) / Tối**, **7 không gian học tập tối (Dark Presets)** chống lóa mắt (*Đen OLED*, *Catppuccin Mocha*, *Tokyo Night*, *Nord Bắc Cực*, *Rosé Pine*, *Gruvbox Ấm*, *GitHub Dark*) và thanh trượt **Độ đục kính thời gian thực** (`45% – 95%`).
 - **Kho từ tối giản & Tự thêm từ theo Progressive Disclosure:** Lọc nhanh qua duy nhất 1 hàng 4 chip trạng thái (`Tất cả`, `Hay quên`, `Đang học`, `Đã thuộc`), mở rộng ví dụ ngay trên từng thẻ từ, và thêm từ cá nhân bằng tay hoặc import hàng loạt từ tệp `.json` qua SAF (`ActivityResultContracts.OpenDocument`).
 - **Trung tâm Luyện tập & Thống kê trực quan:** Trắc nghiệm nhanh 10 câu và **Luyện nghe phản xạ TTS** (ẩn mặt chữ, tự động phát âm) với nút đưa toàn bộ từ sai vào hàng đợi ôn tập gấp; thống kê Canvas 7 ngày gần nhất, tiến độ theo từng giáo trình, 8 nhóm chủ đề và Top từ khó nhớ (`easeFactor` thấp nhất).
-- **Nhắc nhở hàng ngày (`WorkManager`), Tối ưu 120Hz ARR & Kiểm tra cập nhật:** Xin quyền thông báo `POST_NOTIFICATIONS` trên Android 13+, chọn giờ nhắc qua `TimePicker`; tự chọn `Display.Mode` tần số cao nhất trên thiết bị hỗ trợ `120Hz` với `isFrameRatePowerSavingsBalanced`. Hỗ trợ nút **`Phiên bản v1.2.0 • Kiểm tra cập nhật`** ngay cuối Cài đặt dùng `HttpURLConnection` thuần kiểm tra GitHub Releases **chỉ khi người dùng chủ động bấm**.
+- **Single-Card SM-2 Hero Dashboard & Lối tắt "Tiếp tục":** Tách bạch rõ `reviewDueCount` (từ đã học đến hạn ôn) khỏi `newWordsCount` (từ mới chưa học) ngay trên thẻ mục tiêu ngày (`Đến hạn • Mới • Thuộc`), kết hợp huy hiệu Streak, nút CTA động và lối tắt `Tiếp tục: [Chủ đề] (X/Y) ›` cho bài đang học dở.
+- **0-Hardcode Dynamic Counts:** Toàn bộ nhãn số lượng từ vựng và chủ đề trên Trang chủ, ô Tìm kiếm, Kho từ, Luyện tập và Thống kê đều truy vấn trực tiếp từ Room Database theo thời gian thực.
+- **Nhắc nhở hàng ngày (`WorkManager`), Tối ưu 120Hz ARR & Kiểm tra cập nhật:** Xin quyền thông báo `POST_NOTIFICATIONS` trên Android 13+, chọn giờ nhắc qua `TimePicker`; tự chọn `Display.Mode` tần số cao nhất trên thiết bị hỗ trợ `120Hz` với `isFrameRatePowerSavingsBalanced`. Hỗ trợ nút **`Phiên bản v1.3.0 • Kiểm tra cập nhật`** ngay cuối Cài đặt dùng `HttpURLConnection` thuần kiểm tra GitHub Releases **chỉ khi người dùng chủ động bấm**.
+
+---
+
+## 🖥️ Giao diện thích ứng (Phone • Foldable • Tablet)
+
+Ứng dụng sử dụng hệ thống phân loại cửa sổ 2 trục (`AppWindowMetrics`) và khoảng thở động chuẩn iPadOS (`AdaptiveLayout.kt`) để giữ độ gọn gàng trên điện thoại nhưng vẫn sang trọng, thoáng mắt trên màn hình gập và Tablet:
+
+| Kích thước màn hình | Khoảng thở ngang (`screenHorizontalPadding`) | Khoảng cách khối & Lưới | Số cột chủ đề | Khung Flashcard / Quiz |
+| --- | :---: | :---: | :---: | :---: |
+| **Điện thoại / Màn phụ** (`< 600.dp`) | `16.dp` | `14.dp` / `10.dp` | `1 cột` | `560.dp` / `580.dp` |
+| **Galaxy Z Fold / Tablet dọc** (`600–999.dp`) | `28.dp` | `22.dp` / `16.dp` | `2 cột` | `720.dp` / `700.dp` |
+| **Tablet xoay ngang** (`>= 1000.dp`) | `40.dp` + căn giữa `1100.dp` | `22.dp` / `16.dp` | `3 cột` | `720.dp` / `700.dp` (hoặc 2-pane khi `height < 650.dp`) |
 
 ---
 
@@ -287,7 +301,10 @@ cd Toeic_Flashcard_Android
 ./gradlew.bat installDebug
 ```
 
-> **Cài đặt nhanh cho người dùng:** Tải trực tiếp file `TOEIC-Flashcard-v1.2.0.apk` tại trang [**GitHub Releases**](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest). Các bản cập nhật ký chung keystore giữ nguyên **100% dữ liệu SM-2 và từ tự thêm** khi cài đè.
+> **Cài đặt nhanh cho người dùng:** Tải trực tiếp file `TOEIC-Flashcard-v1.3.0.apk` tại trang [**GitHub Releases**](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest). Các bản cập nhật ký chung keystore giữ nguyên **100% dữ liệu SM-2 và từ tự thêm** khi cài đè.
+
+### Chạy thử nghiệm đa thiết bị Low-RAM (`Q1`–`Q11`, trần `<= 2.0 GB` RAM)
+Dự án đi kèm bộ launcher [`Start_Emulator.bat`](./Start_Emulator.bat) / [`tools/launch_toeic_avd.ps1`](./tools/launch_toeic_avd.ps1) hỗ trợ chuyển nhanh 11 cấu hình màn hình thực tế (TECNO CLA5, Galaxy Z Fold 7/8 Cover & Inner, OPPO Pad SE, Redmi Pad 2 dọc/ngang, Xiaomi Pad 8, Split-Screen) mà chỉ dùng 1 máy ảo nền (`-memory 1152 -gpu swiftshader_indirect`).
 
 ### Định dạng `.json` hỗ trợ Import vào `Từ vựng tự thêm`
 
@@ -311,6 +328,7 @@ Trong tab **Kho từ** -> nhấn nút **`+`** -> chuyển sang tab **Nhập file
 
 ---
 
-## 📄 Tài liệu kiến trúc chi tiết
+## 📄 Tài liệu kiến trúc & kỹ thuật
 
-Xem phân tích chuyên sâu về 14 Use Cases, Sequence Diagrams, Lược đồ Room/DataStore, Máy trạng thái và quy trình chuẩn hóa 2.154 từ vựng tại **[`PROJECT_REPORT.md`](./PROJECT_REPORT.md)**.
+- **[`docs/TECHNICAL_DOCUMENTATION.md`](./docs/TECHNICAL_DOCUMENTATION.md)** — Đặc tả kỹ thuật chi tiết (`v1.3.0`): Clean Architecture, SM-2 (`reviewDueCount` vs `newWordsCount`), Ma trận Adaptive UI 11 thiết bị (`Q1`–`Q11`), Room v3 & CI/CD.
+- **[`PROJECT_REPORT.md`](./PROJECT_REPORT.md)** — Báo cáo tổng hợp 14 Use Cases, Sequence Diagrams, Lược đồ CSDL, Máy trạng thái và Kết quả kiểm thử toàn dự án.

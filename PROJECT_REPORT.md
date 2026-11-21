@@ -9,13 +9,13 @@
 | Thuộc tính | Giá trị thực tế trong mã nguồn |
 | --- | --- |
 | **Tên ứng dụng / Application ID** | `TOEIC Flashcard` / `com.toeicflashcard` |
+| **Phiên bản phát hành hiện tại** | **`v1.3.0`** (`versionCode = 3`, ký số V2/V3 bằng `toeic_release.jks`, R8 minification) |
 | **Phiên bản Android hỗ trợ** | `minSdk = 24` (Android 7.0) — `targetSdk = 35` — `compileSdk = 35` (JVM 17) |
-| **Ngân hàng từ vựng (4 Assets + Custom)** | **2.154 từ vựng** thuộc **104 chủ đề** (`30 + 745` Cốt Lõi `775` • `600` từ *600 Essential Words* • `779` từ *800 Từ TOEIC Level 450*) + từ tự thêm ID `>= 3001` |
-| **Điều hướng & Màn hình chính** | **4 Tab Dock nổi** (`Trang chủ`, `Kho từ`, `Luyện tập`, `Thống kê`) + **Overlay Warm NavHost** (`StudyRoute`, `QuizRoute`) |
-| **Ngôn ngữ thiết kế** | **Apple Liquid Glass** (`dev.chrisbanes.haze:haze:1.0.0`), Light Ice Mesh + **7 Dark Presets** + **Real-time Glass Opacity Slider** |
+| **Ngân hàng từ vựng (4 Assets + Custom)** | **2.154 từ vựng** thuộc **104 chủ đề** (`30 + 745` Cốt Lõi `775` • `600` từ *600 Essential Words* • `779` từ *800 Từ TOEIC Level 450*) + từ tự thêm ID `>= 3001` (truy vấn động 0-hardcode từ Room) |
+| **Điều hướng & Màn hình chính** | **4 Tab Dock nổi** (`Trang chủ`, `Kho từ`, `Luyện tập`, `Thống kê`) + **Overlay Warm NavHost** (`StudyRoute`, `QuizRoute`) + **Adaptive Layout** (Phone, Foldable, Tablet) |
+| **Ngôn ngữ thiết kế** | **Apple Liquid Glass** (`dev.chrisbanes.haze:haze:1.0.0`), Light Ice Mesh + **7 Dark Presets** + **Real-time Glass Opacity Slider** + **App Icon v2** |
 | **Hiệu năng & Tần số quét** | **120Hz Adaptive Refresh Rate** (`preferredDisplayModeId`, `isFrameRatePowerSavingsBalanced = true` trên API 35+, 0 infinite idle animation) |
-| **Quy mô mã nguồn Kotlin** | **65 file** mã nguồn chính + **9 file** unit test = **74 file** |
-| **Kiểm thử tự động & Thực tế** | **38/38 Unit Tests Pass** (`9` test suites, `0` failures/errors); xác minh trên **TECNO CLA5** (Android 16), `120.00001Hz` (`8.33ms` VSYNC), `logcat` `0` crash |
+| **Kiểm thử tự động & Thực tế** | **61/61 Unit & System Tests Pass** (`15` test suites, `0` failures/errors/skipped); xác minh trên **TECNO CLA5** (`120Hz`), **OPPO Pad SE**, **Redmi Pad 2**, **Galaxy Z Fold** (`<= 2.0 GB` RAM AVD suite) |
 
 ### Lộ trình tiến hóa kiến trúc & tính năng của dự án
 
@@ -26,6 +26,7 @@ flowchart LR
     S3 --> S4["GĐ 7: Điều hướng 4 Tab & Thống kê\nFloating Liquid Glass Bottom Dock\nSafari Auto-Hide + Kho từ + Luyện nghe + Stats"]
     S4 --> S5["GĐ 8: Hệ sinh thái Theme & Custom\n7 Dark Presets + Tự thêm từ (Tay/JSON)\nChuyển nhanh Sáng/Tối"]
     S5 --> S6["GĐ 9–10: Đa Giáo trình & Tinh gọn\nRoom v3 + 2.154 từ / 104 chủ đề\nDeck Dropdown Sync + 120Hz ARR"]
+    S6 --> S7["GĐ 11–12 (v1.3.0): Adaptive Fold/Tablet\nSingle-Card SM-2 Hero + 0-Hardcode\nApp Icon v2 + 15 Test Suites (61 tests)"]
 ```
 
 ---
@@ -550,7 +551,13 @@ stateDiagram-v2
 | `GetStudyQueueUseCaseTest` | 3 | **3/3 Pass** | Hàng đợi ôn hạn, từ khó, tự do theo chủ đề & lọc theo `deckId` trên cả cache lẫn suspend Room |
 | `GlassOpacityPreferencesTest` | 2 | **2/2 Pass** | Giá trị mặc định `0.82f` Dark / `0.75f` Light, clamp chặt biên `0.45f..0.95f` |
 | `DisplayRefreshRateSelectionTest` | 2 | **2/2 Pass** | `selectHighestRefreshRateModeId` chọn đúng `120Hz` khớp độ phân giải màn hình hiện tại (`1080x2436`) |
-| **Tổng cộng (`9` suites)** | **38** | **38/38 Pass** | **0 failures, 0 errors, 0 skipped** |
+| `GitHubUpdateCheckerTest` | 5 | **5/5 Pass** | Kiểm tra so sánh semver (`v1.3.0 > v1.2.0`), parse JSON GitHub Releases và lỗi mạng an toàn |
+| `ObserveHomeSummaryUseCaseTest` | 3 | **3/3 Pass** | Tách bạch `reviewDueCount` vs `newWordsCount`, chọn `continueTopic` gần nhất và lọc theo `deckId` |
+| `AppWindowMetricsTest` | 7 | **7/7 Pass** | Phân loại 2 trục (`isExpandedWidth`, `isLandscapeShort`) & khoảng thở động `AdaptiveLayout` |
+| `VocabularyVaultViewModelTest` | 1 | **1/1 Pass** | Đồng bộ lọc `selectedDeckId` và trạng thái chip trên Kho từ vựng |
+| `ResponsiveAndIconJvmRenderTest` | 2 | **2/2 Pass** | Truy vấn động `totalCount` khi thêm từ mới, tính số cột OPPO Pad SE / Redmi Pad 2 & kiểm tra icon v2 |
+| `SystemFlowAndAdaptiveUiTest` | 4 | **4/4 Pass** | Luồng E2E SM-2 + Streak, Quiz -> Ôn gấp, Custom Vocab, & Ma trận Adaptive UI **11 thiết bị (`Q1`–`Q11`)** |
+| **Tổng cộng (`15` suites)** | **61** | **61/61 Pass** | **0 failures, 0 errors, 0 skipped** |
 
 ### Kiểm chứng thực tế trên thiết bị (`TECNO CLA5` — Android 16)
 - **Nâng cấp DB v2 → v3 không mất dữ liệu:** Cài đè `.\gradlew.bat installDebug` giữ nguyên tiến độ SM-2 cũ (`31` từ đã thuộc, chuỗi `2 ngày`) khi ngân hàng từ vựng mở rộng từ `775` lên **2.154 từ**; `logcat -d -s AndroidRuntime:E SQLiteLog:E Room:E` xác nhận **0 lỗi**.
