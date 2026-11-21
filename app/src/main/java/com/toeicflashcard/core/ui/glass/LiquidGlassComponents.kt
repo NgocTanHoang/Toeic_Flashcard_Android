@@ -618,7 +618,9 @@ fun LiquidGlassSearchCapsule(
     placeholder: String,
     onQueryChange: (String) -> Unit,
     modifier: Modifier = Modifier,
-    clearContentDescription: String = "Xóa tìm kiếm"
+    clearContentDescription: String = "Xóa tìm kiếm",
+    hazeState: HazeState? = null,
+    floatingBlurRadius: Dp = 18.dp
 ) {
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
@@ -628,13 +630,48 @@ fun LiquidGlassSearchCapsule(
         Color.White.copy(alpha = (glassOpacity * 0.78f).coerceIn(0.42f, 0.92f))
     }
 
+    val backgroundModifier = if (hazeState != null) {
+        val pillTint = if (glassColors.isDark) {
+            glassColors.dialogSheetFill.copy(alpha = (glassOpacity * 0.92f).coerceIn(0.65f, 0.94f))
+        } else {
+            Color(0xFFF6FAFF).copy(alpha = (glassOpacity * 0.88f).coerceIn(0.62f, 0.94f))
+        }
+        val blur = floatingBlurRadius.coerceIn(16.dp, 20.dp)
+        val hazeStyle = remember(glassColors.hazeBackground, pillTint, blur, glassColors.isDark) {
+            HazeStyle(
+                backgroundColor = glassColors.hazeBackground,
+                tint = HazeTint(pillTint),
+                blurRadius = blur,
+                noiseFactor = 0.0f,
+                fallbackTint = HazeTint(
+                    pillTint.copy(alpha = if (glassColors.isDark) 0.92f else 0.90f)
+                )
+            )
+        }
+        val sheenModifier = if (glassColors.sheenBrush != null) {
+            Modifier.background(glassColors.sheenBrush)
+        } else {
+            Modifier
+        }
+        Modifier
+            .hazeChild(
+                state = hazeState,
+                style = hazeStyle
+            )
+            .then(sheenModifier)
+    } else {
+        Modifier.background(fill)
+    }
+
+    val borderWidth = if (hazeState != null || glassColors.isDark) 0.75.dp else 1.dp
+
     Row(
         modifier = modifier
             .height(44.dp)
             .clip(CircleShape)
-            .background(fill)
+            .then(backgroundModifier)
             .border(
-                width = if (glassColors.isDark) 0.75.dp else 1.dp,
+                width = borderWidth,
                 brush = glassColors.defaultBorderBrush,
                 shape = CircleShape
             )

@@ -3,6 +3,7 @@ package com.toeicflashcard.presentation.vault
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
@@ -28,7 +29,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
-import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -45,15 +45,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -62,6 +68,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import com.toeicflashcard.core.ui.glass.CollapsibleHeaderSpring
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassSearchCapsule
@@ -74,9 +81,10 @@ import com.toeicflashcard.domain.model.VocabularyWord
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
+import dev.chrisbanes.haze.hazeChild
 import java.text.NumberFormat
 import java.util.Locale
-import dev.chrisbanes.haze.hazeChild
+import kotlin.math.roundToInt
 
 private val VaultWordCardShape = RoundedCornerShape(20.dp)
 private val ExamplePanelShape = RoundedCornerShape(14.dp)
@@ -197,7 +205,7 @@ fun FloatingVaultHeader(
     totalCount: Int,
     query: String,
     selectedFilter: VaultFilter,
-    counts: Map<VaultFilter, Int>,
+    isCollapsed: Boolean = false,
     contentHazeState: HazeState,
     onQueryChange: (String) -> Unit,
     onSelectFilter: (VaultFilter) -> Unit,
@@ -205,8 +213,27 @@ fun FloatingVaultHeader(
     onOpenAddVocabulary: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
+    var topRowHeightPx by remember { mutableIntStateOf(0) }
+    var filterRowHeightPx by remember { mutableIntStateOf(0) }
+    val collapseProgressState = animateFloatAsState(
+        targetValue = if (isCollapsed) 1f else 0f,
+        animationSpec = CollapsibleHeaderSpring,
+        label = "vault_header_collapse"
+    )
+    val extraTopGapPx = remember(density) { with(density) { 8.dp.toPx() } }
+    val extraSideMarginPx = remember(density) { with(density) { 16.dp.toPx() } }
+    val floatingShadowPx = remember(density, glassColors.isDark) {
+        with(density) { (if (glassColors.isDark) 8.dp else 10.dp).toPx() }
+    }
+    val ambientShadowTint = Color(0xFF0F172A).copy(alpha = if (glassColors.isDark) 0.45f else 0.16f)
+    val spotShadowTint = Color(0xFF0F172A).copy(alpha = if (glassColors.isDark) 0.55f else 0.24f)
+
+    val formattedTotalCount = remember(totalCount) {
+        NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")).format(totalCount)
+    }
     val headerTint = if (glassColors.isDark) {
         glassColors.hazeBackground.copy(alpha = glassOpacity)
     } else {
@@ -224,91 +251,169 @@ fun FloatingVaultHeader(
         )
     }
 
-    Column(
-        modifier = modifier
-            .hazeChild(
-                state = contentHazeState,
-                style = headerHazeStyle
-            )
-            .statusBarsPadding()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(5.dp)
-            ) {
-                Text(
-                    text = "Kho từ vựng",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                VaultDeckDropdownPill(
-                    selectedDeckName = selectedDeckName,
-                    totalCount = totalCount,
-                    onClick = onOpenDeckSwitcher
-                )
-            }
-
-            LiquidGlassIconButton(
-                onClick = onOpenAddVocabulary,
-                size = 42.dp
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Add,
-                    contentDescription = "Thêm từ vựng mới",
-                    modifier = Modifier.size(21.dp)
-                )
-            }
-        }
-
-        LiquidGlassSearchCapsule(
-            query = query,
-            placeholder = "Tìm từ tiếng Anh, nghĩa Việt, chủ đề...",
-            onQueryChange = onQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp)
-        )
-
-        LazyRow(
-            contentPadding = PaddingValues(horizontal = 18.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(
-                items = VaultFilter.entries,
-                key = { it.name }
-            ) { filter ->
-                val isSelected = selectedFilter == filter
-                val count = counts[filter] ?: 0
-                VaultFilterChip(
-                    label = "${filter.label} ($count)",
-                    selected = isSelected,
-                    onClick = { onSelectFilter(filter) }
-                )
-            }
-        }
-
+    Box(modifier = modifier) {
+        // Layer 1: Full-bleed frosted header backdrop fading cleanly when collapsed
         Box(
             modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer {
+                    val p = collapseProgressState.value
+                    alpha = (1f - p).coerceIn(0f, 1f)
+                    translationY = -topRowHeightPx * 0.5f * p
+                }
+                .hazeChild(
+                    state = contentHazeState,
+                    style = headerHazeStyle
+                )
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(0.6.dp)
+                    .background(glassColors.divider)
+            )
+        }
+
+        // Layer 2: Collapsing top bar + Sticky floating frosted search pill + collapsing filter row
+        Column(
+            modifier = Modifier
                 .fillMaxWidth()
-                .height(0.6.dp)
-                .background(glassColors.divider)
-        )
+                .statusBarsPadding()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clipToBounds()
+                    .onSizeChanged {
+                        if (it.height > 0) topRowHeightPx = it.height
+                    }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            val p = collapseProgressState.value
+                            translationY = -topRowHeightPx * p
+                            alpha = (1f - p * 1.35f).coerceIn(0f, 1f)
+                        }
+                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = "Kho từ",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            softWrap = false
+                        )
+                        VaultDeckDropdownPill(
+                            selectedDeckName = selectedDeckName,
+                            enabled = !isCollapsed,
+                            onClick = onOpenDeckSwitcher,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                    }
+
+                    LiquidGlassIconButton(
+                        onClick = onOpenAddVocabulary,
+                        size = 40.dp,
+                        enabled = !isCollapsed
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Add,
+                            contentDescription = "Thêm từ vựng mới",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+
+            LiquidGlassSearchCapsule(
+                query = query,
+                placeholder = "Tìm trong $formattedTotalCount từ...",
+                onQueryChange = onQueryChange,
+                hazeState = contentHazeState,
+                floatingBlurRadius = 18.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp)
+                    .layout { measurable, constraints ->
+                        val inset = (extraSideMarginPx * collapseProgressState.value).roundToInt()
+                        val narrowedMaxWidth = (constraints.maxWidth - inset * 2).coerceAtLeast(0)
+                        val placeable = measurable.measure(
+                            constraints.copy(
+                                minWidth = constraints.minWidth.coerceAtMost(narrowedMaxWidth),
+                                maxWidth = narrowedMaxWidth
+                            )
+                        )
+                        val outerWidth = constraints.maxWidth.coerceAtLeast(placeable.width)
+                        layout(outerWidth, placeable.height) {
+                            placeable.placeRelative(
+                                x = (outerWidth - placeable.width) / 2,
+                                y = 0
+                            )
+                        }
+                    }
+                    .graphicsLayer {
+                        val p = collapseProgressState.value
+                        val travel = (topRowHeightPx - extraTopGapPx).coerceAtLeast(0f)
+                        translationY = -travel * p
+                        shadowElevation = floatingShadowPx * p
+                        shape = CircleShape
+                        clip = false
+                        ambientShadowColor = ambientShadowTint
+                        spotShadowColor = spotShadowTint
+                    }
+            )
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clipToBounds()
+                    .onSizeChanged {
+                        if (it.height > 0) filterRowHeightPx = it.height
+                    }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            val p = collapseProgressState.value
+                            translationY = -filterRowHeightPx * p
+                            alpha = (1f - p * 1.6f).coerceIn(0f, 1f)
+                        }
+                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    VaultFilter.entries.forEach { filter ->
+                        VaultFilterChip(
+                            label = filter.label,
+                            selected = selectedFilter == filter,
+                            interactive = !isCollapsed,
+                            onClick = { onSelectFilter(filter) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
     }
 }
 
 @Composable
 private fun VaultDeckDropdownPill(
     selectedDeckName: String,
-    totalCount: Int,
-    onClick: () -> Unit
+    enabled: Boolean = true,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val pillFill = if (glassColors.isDark) {
@@ -316,12 +421,18 @@ private fun VaultDeckDropdownPill(
     } else {
         Color.White.copy(alpha = 0.68f)
     }
-    val formattedCount = remember(totalCount) {
-        NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")).format(totalCount)
+    val clickModifier = if (enabled) {
+        Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(bounded = true, color = MaterialTheme.colorScheme.primary),
+            onClick = onClick
+        )
+    } else {
+        Modifier
     }
 
     Row(
-        modifier = Modifier
+        modifier = modifier
             .clip(CircleShape)
             .background(pillFill)
             .border(
@@ -329,17 +440,13 @@ private fun VaultDeckDropdownPill(
                 brush = glassColors.defaultBorderBrush,
                 shape = CircleShape
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = true, color = MaterialTheme.colorScheme.primary),
-                onClick = onClick
-            )
+            .then(clickModifier)
             .padding(horizontal = 11.dp, vertical = 5.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
     ) {
         Text(
-            text = "$selectedDeckName ($formattedCount)",
+            text = selectedDeckName,
             style = MaterialTheme.typography.labelMedium,
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
@@ -360,7 +467,9 @@ private fun VaultDeckDropdownPill(
 private fun VaultFilterChip(
     label: String,
     selected: Boolean,
-    onClick: () -> Unit
+    interactive: Boolean = true,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val targetBg = when {
@@ -380,9 +489,18 @@ private fun VaultFilterChip(
         glassColors = glassColors,
         accentColor = if (selected && !glassColors.isDark) MaterialTheme.colorScheme.primary else null
     )
+    val clickModifier = if (interactive) {
+        Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(bounded = true, color = fg),
+            onClick = onClick
+        )
+    } else {
+        Modifier
+    }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clip(CircleShape)
             .background(bg)
             .border(
@@ -390,12 +508,8 @@ private fun VaultFilterChip(
                 brush = borderBrush,
                 shape = CircleShape
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = true, color = fg),
-                onClick = onClick
-            )
-            .padding(horizontal = 13.dp, vertical = 7.dp),
+            .then(clickModifier)
+            .padding(horizontal = 6.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -404,7 +518,8 @@ private fun VaultFilterChip(
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             color = fg,
             maxLines = 1,
-            softWrap = false
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

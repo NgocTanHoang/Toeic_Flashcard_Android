@@ -14,7 +14,7 @@
 | **Điều hướng & Màn hình chính** | **4 Tab Dock nổi** (`Trang chủ`, `Kho từ`, `Luyện tập`, `Thống kê`) + **Overlay Warm NavHost** (`StudyRoute`, `QuizRoute`) |
 | **Ngôn ngữ thiết kế** | **Apple Liquid Glass** (`dev.chrisbanes.haze:haze:1.0.0`), Light Ice Mesh + **7 Dark Presets** + **Real-time Glass Opacity Slider** |
 | **Hiệu năng & Tần số quét** | **120Hz Adaptive Refresh Rate** (`preferredDisplayModeId`, `isFrameRatePowerSavingsBalanced = true` trên API 35+, 0 infinite idle animation) |
-| **Quy mô mã nguồn Kotlin** | **64 file** mã nguồn chính (`13.463` dòng Kotlin) + **9 file** unit test (`1.111` dòng Kotlin) = **73 file (`14.574` dòng)** |
+| **Quy mô mã nguồn Kotlin** | **65 file** mã nguồn chính + **9 file** unit test = **74 file** |
 | **Kiểm thử tự động & Thực tế** | **38/38 Unit Tests Pass** (`9` test suites, `0` failures/errors); xác minh trên **TECNO CLA5** (Android 16), `120.00001Hz` (`8.33ms` VSYNC), `logcat` `0` crash |
 
 ### Lộ trình tiến hóa kiến trúc & tính năng của dự án
@@ -118,17 +118,17 @@ flowchart TD
     PREPO --> CORE
 ```
 
-### Cấu trúc toàn bộ 64 file mã nguồn chính & 9 file test (`com.toeicflashcard`)
+### Cấu trúc toàn bộ 65 file mã nguồn chính & 9 file test (`com.toeicflashcard`)
 
-- **App Entry & DI (`2` files):**
+- **App Entry & DI (`3` files):**
   - `MainActivity.kt` (Edge-to-edge, quan sát theme/darkTone/opacity, cấu hình `enableAdaptiveHighRefreshRate` + ARR API 35+)
   - `ToeicApplication.kt` & `di/AppContainer.kt` (khởi tạo singleton database, seeder, repositories, schedulers và use cases)
-- **`core/` (`10` files):**
+- **`core/` (`11` files):**
   - `core/audio/TtsManager.kt`: Lazy TTS engine trên `Executors.newSingleThreadExecutor()`, queue từ chờ khi engine đang khởi động, fallback `Locale.US -> Locale.ENGLISH`.
   - `core/notification/ReminderNotificationHelper.kt`, `ReminderScheduler.kt`: Tạo notification channel và lập lịch WorkManager mỗi 24h.
   - `core/time/TimeProvider.kt`: `SystemTimeProvider` chuẩn hóa `epochDay` và `endOfTodayMillis` an toàn từ API 24+.
   - `core/ui/theme/Color.kt`, `Theme.kt`, `Type.kt`: Hệ thống `LocalLiquidGlassColors`, `LocalDarkTone`, `LocalGlassOpacity`, `LocalSm2RatingColors`, Material 3 color schemes động theo `DarkTone`.
-  - `core/ui/glass/AmbientMeshBackground.kt`, `LiquidGlassComponents.kt`, `LiquidGlassBottomDock.kt`: Nền tĩnh (Light bitmap mesh rasterized 1 lần mỗi Viewport / Dark đơn sắc theo preset), thẻ/nút/dialog/sheet kính, `LiquidGlassHairlineProgress`, `LiquidGlassSearchCapsule`, và `LiquidGlassBottomDock` + `DockScrollController`.
+  - `core/ui/glass/AmbientMeshBackground.kt`, `LiquidGlassComponents.kt`, `LiquidGlassBottomDock.kt`, `CollapsibleHeaderState.kt`: Nền tĩnh (Light bitmap mesh rasterized 1 lần mỗi Viewport / Dark đơn sắc theo preset), thẻ/nút/dialog/sheet kính, `LiquidGlassHairlineProgress`, `LiquidGlassSearchCapsule` (hỗ trợ `hazeChild` floating pill), `CollapsibleHeaderState`, và `LiquidGlassBottomDock` + `DockScrollController`.
 - **`data/` (`10` files):**
   - `data/local/entity/VocabularyEntity.kt`, `data/local/dao/VocabularyDao.kt`: Bảng `vocabulary_words` với 3 index (`topic`, `nextReviewTimestamp`, `deckId`), `Insert(IGNORE)` cho seed và `Insert(ABORT)` cho từ tự thêm.
   - `data/local/database/ToeicDatabase.kt`, `VocabularySeeder.kt`: Room v3 (`MIGRATION_1_2`, `MIGRATION_2_3`), Seeder v3 với `Mutex` đồng bộ `ASSET_FILES`.
@@ -192,7 +192,7 @@ flowchart TD
 
 ### 4.7. Thuật Toán SM-2 & Hệ Thống Daily Streak
 - `Sm2RatingBar` xuất hiện sau khi người học lật mặt sau thẻ lần đầu tiên, kèm nhãn xem trước khoảng lặp (`< 1 ngày`, `1 ngày`, `6 ngày`, `N tháng`/`năm`):
-  - **Quên** ($q = 1$), **Khó** ($q = 3$), **Tốt** ($q = 4$), **Dễ** ($q = 5$).
+  - **Quên** ($q = 1$), **Khó** ($q = 3$), **Bình thường** ($q = 4$), **Dễ** ($q = 5$).
 - Công thức SM-2 chuẩn hóa trong [Sm2Scheduler.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/domain/scheduler/Sm2Scheduler.kt):
   $$EF' = \max\!\left(1.3,\; EF + 0.1 - (5 - q)\bigl(0.08 + 0.02(5 - q)\bigr)\right)$$
   $$I(n) = \begin{cases} 1 \text{ (đẩy về cuối hàng đợi phiên hiện tại)}, & \text{nếu } q < 3 \\ 1 \text{ ngày}, & \text{nếu } q \ge 3 \text{ và } n = 0 \\ 6 \text{ ngày}, & \text{nếu } q \ge 3 \text{ và } n = 1 \\ \operatorname{round}(I(n-1) \times EF') \text{ ngày}, & \text{nếu } q \ge 3 \text{ và } n \ge 2 \end{cases}$$
@@ -283,7 +283,7 @@ flowchart LR
 | **UC-03** | Duyệt & Lọc Kho từ vựng | Người học | Chọn bộ từ qua `VaultDeckDropdownPill`, lọc 1 hàng chip (`Tất cả`, `Hay quên`, `Đang học`, `Đã thuộc`), tìm kiếm, chạm thẻ xem ví dụ & phát âm. | Tác động tìm kiếm/lọc chạy trên `Dispatchers.Default`, số lượng từng chip cập nhật động theo bộ từ. |
 | **UC-04** | Tự thêm Từ vựng (Tay / JSON) | Người học | Mở `AddVocabularySheet` từ nút `+` trên Kho từ -> Nhập form hoặc chọn tệp `.json` -> `AddCustomVocabularyUseCase` chuẩn hóa & lưu DB. | Tự bóc BOM, kiểm tra trùng lặp không phân biệt hoa thường với toàn DB, cấp ID `>= 3001`, gán `deckId = "custom_user"`. |
 | **UC-05** | Học Flashcard 3D & Phát âm TTS | Người học | Chọn **Ôn tập ngay** (tối đa 20 từ đến hạn) hoặc 1 chủ đề -> Chạm thẻ lật 3D -> Nghe từ / nghe ví dụ -> Đổi tốc độ `0.75x`/`1.0x`. | Hết từ đến hạn trong chủ đề tự chuyển sang **Ôn luyện tự do**; báo Snackbar nếu thiếu gói giọng US TTS. |
-| **UC-06** | Chấm điểm SM-2 & Cập nhật Streak | Người học | Chọn `Quên / Khó / Tốt / Dễ` -> `SubmitReviewUseCase` tính `Sm2Scheduler`, lưu Room và cập nhật `StreakCalculator` + lịch sử ngày vào DataStore. | Chọn `Quên` (`q = 1`) đẩy thẻ về cuối hàng đợi phiên học cho đến khi nhớ lại. |
+| **UC-06** | Chấm điểm SM-2 & Cập nhật Streak | Người học | Chọn `Quên / Khó / Bình thường / Dễ` -> `SubmitReviewUseCase` tính `Sm2Scheduler`, lưu Room và cập nhật `StreakCalculator` + lịch sử ngày vào DataStore. | Chọn `Quên` (`q = 1`) đẩy thẻ về cuối hàng đợi phiên học cho đến khi nhớ lại. |
 | **UC-07** | Đổi Mục tiêu ngày | Người học | Chạm vòng tròn tiến độ trên `HeroGlassDashboard` -> Chọn `5`, `10` hoặc `20` từ -> Lưu `daily_goal` vào DataStore. | Vòng tiến độ và đường kẻ mục tiêu trên biểu đồ `StatsScreen` cập nhật ngay. |
 | **UC-08** | Trắc nghiệm nhanh (Quiz) | Người học | Từ tab `Luyện tập`, chọn **Trắc nghiệm nhanh** -> Chọn toàn bộ bộ từ đang học hoặc 1 chủ đề trong `QuizScopeDialog` -> Chọn đáp án. | Khóa lựa chọn ngay sau lần chạm đầu tiên, tự chuyển câu sau `1.2s`. |
 | **UC-09** | Luyện nghe phản xạ TTS | Người học | Chọn **Luyện nghe từ vựng** -> Ẩn mặt chữ tiếng Anh & IPA, tự động đọc từ qua TTS -> Mở đáp án sau khi trả lời. | Có nút chỉnh nhanh tốc độ `1.0x`/`0.75x` ngay trên TopBar của `QuizScreen`. |
@@ -351,7 +351,7 @@ sequenceDiagram
     Screen->>SVM: flipCard()
     SVM-->>Screen: isFlipped = true, hasRevealedBack = true (hiện 4 nút SM-2)
 
-    User->>Screen: Chọn mức đánh giá (Quên / Khó / Tốt / Dễ)
+    User->>Screen: Chọn mức đánh giá (Quên / Khó / Bình thường / Dễ)
     Screen->>SVM: submitRating(quality)
     SVM->>TTS: stop()
     SVM->>UseCase: invoke(currentWord, quality)
@@ -511,7 +511,7 @@ erDiagram
 stateDiagram-v2
     [*] --> NewWord: "repetitions = 0, EF = 2.5"
     NewWord --> RequeuedSession: "Quên (q = 1)"
-    NewWord --> Learning1Day: "Khó/Tốt/Dễ (q >= 3)"
+    NewWord --> Learning1Day: "Khó/Bình thường/Dễ (q >= 3)"
     RequeuedSession --> Learning1Day: "Nhớ lại (q >= 3)"
     Learning1Day --> Reviewing6Days: "Lần 2 nhớ (q >= 3)"
     Reviewing6Days --> LongTermInterval: "I(n) = round(I(n-1) * EF')"
@@ -559,30 +559,23 @@ stateDiagram-v2
   - `adb shell dumpsys SurfaceFlinger --latency`: chu kỳ đồng bộ `8333333` ns (`8.33ms` = **120Hz**). Trên bộ đếm FPS thiết bị, ứng dụng hiển thị `120` khi cuộn/tương tác và tự hạ về `60` khi đứng yên để tiết kiệm pin.
 - **Đóng gói Benchmark APK:** `.\gradlew.bat assembleBenchmark` biên dịch thành công (`isDebuggable = false`).
 
-### Bộ 10 màn hình tính năng thực tế (Theme Tokyo Night — `screenshots_liquid_glass/`)
+### Thư viện màn hình thực tế Light & Dark (`screenshots_liquid_glass/`)
 
-| Trang chủ (Header 2 nút thoáng) | Deck Switcher Bottom Sheet | Trang chủ lọc `600 Essential` |
-| :---: | :---: | :---: |
-| ![Trang chủ](screenshots_liquid_glass/01_home_dashboard.png) | ![Deck Switcher](screenshots_liquid_glass/02_deck_switcher_sheet.png) | ![600 Essential Words](screenshots_liquid_glass/03_home_essential_600.png) |
+| Trang chủ (Light) | Trang chủ (Dark) | Trang chủ cuộn + Floating Search (Light) | Trang chủ cuộn + Floating Search (Dark) |
+| :---: | :---: | :---: | :---: |
+| ![Trang chủ Light](screenshots_liquid_glass/light_01_home.png) | ![Trang chủ Dark](screenshots_liquid_glass/dark_01_home.png) | ![Trang chủ cuộn Light](screenshots_liquid_glass/light_02_home_scrolled.png) | ![Trang chủ cuộn Dark](screenshots_liquid_glass/dark_02_home_scrolled.png) |
 
-| Flashcard 3D (Mặt trước) | Flashcard 3D (Mặt sau & SM-2) | Kho từ vựng (1 hàng chip + Dropdown) |
-| :---: | :---: | :---: |
-| ![Flashcard Front](screenshots_liquid_glass/04_study_flashcard_front.png) | ![Flashcard Back SM-2](screenshots_liquid_glass/05_study_flashcard_back_sm2.png) | ![Vocabulary Vault](screenshots_liquid_glass/06_vocabulary_vault_expanded.png) |
+| Deck Switcher Sheet | Flashcard 3D Mặt trước | Flashcard Mặt sau & SM-2 (Light) | Flashcard Mặt sau & SM-2 (Dark) |
+| :---: | :---: | :---: | :---: |
+| ![Deck Switcher Light](screenshots_liquid_glass/light_02_deck_switcher.png) | ![Flashcard Front Light](screenshots_liquid_glass/light_03_study_front.png) | ![Flashcard Back SM-2 Light](screenshots_liquid_glass/light_04_study_back_sm2.png) | ![Flashcard Back SM-2 Dark](screenshots_liquid_glass/dark_04_study_back_sm2.png) |
 
-| Trung tâm Luyện tập | Chọn phạm vi Quiz / Nghe | Màn hình Kiểm tra nhanh |
-| :---: | :---: | :---: |
-| ![Practice Hub](screenshots_liquid_glass/07_practice_hub.png) | ![Quiz Scope Dialog](screenshots_liquid_glass/08_quiz_scope_dialog.png) | ![Quiz Question](screenshots_liquid_glass/09_quiz_active_question.png) |
+| Tab Luyện tập (Light) | Trắc nghiệm nhanh (Light) | Tab Kho từ (Light) | Thêm từ mới (Light) |
+| :---: | :---: | :---: | :---: |
+| ![Practice Light](screenshots_liquid_glass/light_05_practice.png) | ![Quiz Light](screenshots_liquid_glass/light_06_quiz_question.png) | ![Vault Light](screenshots_liquid_glass/light_07_vault.png) | ![Add Vocab Light](screenshots_liquid_glass/light_08_add_vocab.png) |
 
-| Thống kê học tập 7 ngày & Bộ từ | Kho từ đồng bộ `600 Essential Words` | |
-| :---: | :---: | :---: |
-| ![Stats Mastery](screenshots_liquid_glass/10_stats_mastery.png) | ![Vault Synced 600](screenshots_liquid_glass/vault_synced_600.png) | |
-
-### Đối chiếu Light Mode & OLED Dark Mode (`#050507`)
-
-| Light Mode (Ice Mesh) | OLED Dark Mode (`#050507`) |
-| :---: | :---: |
-| ![Trang chủ Light](screenshots_liquid_glass/light_01_home_top.png) | ![Trang chủ Dark](screenshots_liquid_glass/dark_01_home_top.png) |
-| ![Cài đặt Light 75%](screenshots_liquid_glass/light_03_settings_sheet.png) | ![Slider Độ đục 57% Dark](screenshots_liquid_glass/dark_03b_settings_sheet_slider_low.png) |
+| Thống kê học tập (Dark) | Cài đặt & Độ đục kính (Light) | Cài đặt & Dark Presets (Dark) | |
+| :---: | :---: | :---: | :---: |
+| ![Stats Dark](screenshots_liquid_glass/dark_09_stats.png) | ![Settings Light](screenshots_liquid_glass/light_10_settings.png) | ![Settings Dark](screenshots_liquid_glass/dark_10_settings.png) | |
 
 ---
 

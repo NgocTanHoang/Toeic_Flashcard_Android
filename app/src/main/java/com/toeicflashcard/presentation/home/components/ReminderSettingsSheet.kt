@@ -317,7 +317,7 @@ private fun ReminderSettingsSheetContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -333,21 +333,20 @@ private fun ReminderSettingsSheetContent(
                                 imageVector = Icons.Rounded.Opacity,
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(19.dp)
+                                modifier = Modifier.size(18.dp)
                             )
-                            Column {
-                                Text(
-                                    text = "Độ đục bề mặt kính",
-                                    style = MaterialTheme.typography.titleMedium,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Text(
-                                    text = "${(sliderValue * 100f).roundToInt()}%",
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                            }
+                            Text(
+                                text = "Độ đục kính",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "${(sliderValue * 100f).roundToInt()}%",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
                         }
 
                         LiquidGlassButton(
@@ -367,13 +366,13 @@ private fun ReminderSettingsSheetContent(
                                 MaterialTheme.colorScheme.onPrimaryContainer
                             },
                             borderColor = if (glassColors.isDark) null else MaterialTheme.colorScheme.primary,
-                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 6.dp),
-                            modifier = Modifier.heightIn(min = 36.dp)
+                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
+                            modifier = Modifier.heightIn(min = 32.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.RestartAlt,
                                 contentDescription = null,
-                                modifier = Modifier.size(15.dp)
+                                modifier = Modifier.size(14.dp)
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
@@ -382,12 +381,6 @@ private fun ReminderSettingsSheetContent(
                             )
                         }
                     }
-
-                    Text(
-                        text = "Kéo để chỉnh độ đục thẻ kính, thanh tiêu đề và hộp thoại theo thời gian thực.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
 
                     Slider(
                         value = sliderValue,
@@ -414,12 +407,12 @@ private fun ReminderSettingsSheetContent(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
-                            text = "45% (Trong suốt)",
+                            text = "45%",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "95% (Đặc mịn)",
+                            text = "95%",
                             style = MaterialTheme.typography.labelSmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -428,68 +421,107 @@ private fun ReminderSettingsSheetContent(
             }
 
             // Section 3: Daily Reminder Settings
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                modifier = Modifier.padding(top = 4.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.NotificationsActive,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(18.dp)
-                )
-                Text(
-                    text = "Nhắc nhở hàng ngày",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
             LiquidGlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = SheetRowCardShape,
                 containerColor = rowGlassFill
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(
-                            text = "Nhắc nhở ôn tập TOEIC",
-                            style = MaterialTheme.typography.titleMedium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Tự động kiểm tra từ đến hạn và nhắc giữ chuỗi Streak",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        Row(
+                            modifier = Modifier.weight(1f),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.NotificationsActive,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Nhắc nhở hàng ngày",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Switch(
+                            checked = reminderEnabled,
+                            onCheckedChange = { wantEnable ->
+                                if (!wantEnable) {
+                                    permissionDeniedNotice = false
+                                    onSaveReminderSettings(false, reminderHour, reminderMinute)
+                                } else if (ReminderNotificationHelper.hasNotificationPermission(context)) {
+                                    permissionDeniedNotice = false
+                                    onSaveReminderSettings(true, reminderHour, reminderMinute)
+                                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    onSaveReminderSettings(true, reminderHour, reminderMinute)
+                                }
+                            }
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Switch(
-                        checked = reminderEnabled,
-                        onCheckedChange = { wantEnable ->
-                            if (!wantEnable) {
-                                permissionDeniedNotice = false
-                                onSaveReminderSettings(false, reminderHour, reminderMinute)
-                            } else if (ReminderNotificationHelper.hasNotificationPermission(context)) {
-                                permissionDeniedNotice = false
-                                onSaveReminderSettings(true, reminderHour, reminderMinute)
-                            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                onSaveReminderSettings(true, reminderHour, reminderMinute)
-                            }
-                        }
+
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                            .height(0.6.dp)
+                            .background(glassColors.divider)
                     )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Schedule,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Giờ nhắc",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        LiquidGlassButton(
+                            onClick = onOpenTimePicker,
+                            tintColor = if (glassColors.isDark) {
+                                Color.White.copy(alpha = 0.10f)
+                            } else {
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
+                            },
+                            contentColor = MaterialTheme.colorScheme.primary,
+                            borderColor = if (glassColors.isDark) null else MaterialTheme.colorScheme.primary,
+                            contentPadding = PaddingValues(horizontal = 14.dp, vertical = 6.dp),
+                            modifier = Modifier.heightIn(min = 36.dp)
+                        ) {
+                            Text(
+                                text = String.format(Locale.getDefault(), "%02d:%02d", reminderHour, reminderMinute),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
             }
 
@@ -535,61 +567,6 @@ private fun ReminderSettingsSheetContent(
                 }
             }
 
-            LiquidGlassCard(
-                modifier = Modifier.fillMaxWidth(),
-                shape = SheetRowCardShape,
-                containerColor = rowGlassFill
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                        Text(
-                            text = "Giờ nhắc hàng ngày",
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = String.format(Locale.getDefault(), "%02d:%02d", reminderHour, reminderMinute),
-                            style = MaterialTheme.typography.headlineMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    LiquidGlassButton(
-                        onClick = onOpenTimePicker,
-                        tintColor = if (glassColors.isDark) {
-                            Color.White.copy(alpha = 0.10f)
-                        } else {
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
-                        },
-                        contentColor = if (glassColors.isDark) {
-                            MaterialTheme.colorScheme.onSurface
-                        } else {
-                            MaterialTheme.colorScheme.onPrimaryContainer
-                        },
-                        borderColor = if (glassColors.isDark) null else MaterialTheme.colorScheme.primary,
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 10.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Rounded.Schedule,
-                            contentDescription = null,
-                            modifier = Modifier.size(18.dp)
-                        )
-                        Spacer(modifier = Modifier.width(6.dp))
-                        Text(
-                            text = "Chọn giờ",
-                            style = MaterialTheme.typography.labelLarge
-                        )
-                    }
-                }
-            }
-
             Spacer(modifier = Modifier.height(2.dp))
         }
     }
@@ -618,10 +595,11 @@ private fun AppearanceSettingsCard(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(vertical = 14.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
+                modifier = Modifier.padding(horizontal = 16.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
@@ -629,99 +607,87 @@ private fun AppearanceSettingsCard(
                     imageVector = Icons.Rounded.Palette,
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(19.dp)
+                    modifier = Modifier.size(18.dp)
                 )
                 Text(
-                    text = "Giao diện & Không gian học",
+                    text = "Giao diện",
                     style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
             // Row 1: ThemeMode Segmented Pill (Hệ thống | Sáng | Tối)
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                Text(
-                    text = "Chế độ hiển thị",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(CircleShape)
-                        .background(pillTrackColor)
-                        .border(0.75.dp, glassColors.defaultBorderBrush, CircleShape)
-                        .padding(4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    ThemeModeOptions.forEach { (mode, label) ->
-                        val isSelected = themeMode == mode
-                        val segmentBg = when {
-                            isSelected && glassColors.isDark -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-                            isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-                            else -> Color.Transparent
-                        }
-                        val segmentFg = when {
-                            isSelected && glassColors.isDark -> MaterialTheme.colorScheme.primary
-                            isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-                            else -> MaterialTheme.colorScheme.onSurfaceVariant
-                        }
-                        Box(
-                            modifier = Modifier
-                                .weight(1f)
-                                .clip(CircleShape)
-                                .background(segmentBg)
-                                .then(
-                                    if (isSelected) {
-                                        Modifier.border(0.8.dp, glassColors.defaultBorderBrush, CircleShape)
-                                    } else {
-                                        Modifier
-                                    }
-                                )
-                                .semantics {
-                                    selected = isSelected
-                                    contentDescription = "Chế độ hiển thị: $label"
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .clip(CircleShape)
+                    .background(pillTrackColor)
+                    .border(0.75.dp, glassColors.defaultBorderBrush, CircleShape)
+                    .padding(4.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                ThemeModeOptions.forEach { (mode, label) ->
+                    val isSelected = themeMode == mode
+                    val segmentBg = when {
+                        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                        else -> Color.Transparent
+                    }
+                    val segmentFg = when {
+                        isSelected && glassColors.isDark -> MaterialTheme.colorScheme.primary
+                        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .clip(CircleShape)
+                            .background(segmentBg)
+                            .then(
+                                if (isSelected) {
+                                    Modifier.border(0.8.dp, glassColors.defaultBorderBrush, CircleShape)
+                                } else {
+                                    Modifier
                                 }
-                                .clickable(role = Role.RadioButton) {
-                                    onSelectThemeMode(mode)
-                                }
-                                .padding(vertical = 8.dp),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = label,
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                                color = segmentFg,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
                             )
-                        }
+                            .semantics {
+                                selected = isSelected
+                                contentDescription = "Chế độ hiển thị: $label"
+                            }
+                            .clickable(role = Role.RadioButton) {
+                                onSelectThemeMode(mode)
+                            }
+                            .padding(vertical = 8.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
+                            color = segmentFg,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
                     }
                 }
             }
 
-            // Row 2: 7 Dark Mode Theme Swatch Pills in a smooth LazyRow
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Bảng màu Dark Mode (7 phong cách)",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                LazyRow(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    items(
-                        items = DarkTone.entries,
-                        key = { it.id }
-                    ) { tone ->
-                        DarkThemeSwatchPill(
-                            tone = tone,
-                            isSelected = darkTone == tone,
-                            onClick = { onSelectDarkTone(tone) }
-                        )
-                    }
+            // Row 2: 7 Dark Mode Theme Swatch Pills with full end contentPadding
+            LazyRow(
+                modifier = Modifier.fillMaxWidth(),
+                contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(
+                    items = DarkTone.entries,
+                    key = { it.id }
+                ) { tone ->
+                    DarkThemeSwatchPill(
+                        tone = tone,
+                        isSelected = darkTone == tone,
+                        onClick = { onSelectDarkTone(tone) }
+                    )
                 }
             }
         }
@@ -764,9 +730,9 @@ private fun DarkThemeSwatchPill(
                 contentDescription = "Tông tối: ${tone.label}"
             }
             .clickable(role = Role.RadioButton, onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 9.dp),
+            .padding(horizontal = 11.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.spacedBy(7.dp)
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -774,7 +740,7 @@ private fun DarkThemeSwatchPill(
         ) {
             Box(
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(14.dp)
                     .clip(CircleShape)
                     .background(bgDot)
                     .border(
@@ -785,7 +751,7 @@ private fun DarkThemeSwatchPill(
             )
             Box(
                 modifier = Modifier
-                    .size(16.dp)
+                    .size(14.dp)
                     .clip(CircleShape)
                     .background(accentDot)
             )
@@ -793,7 +759,7 @@ private fun DarkThemeSwatchPill(
 
         Text(
             text = tone.label,
-            style = MaterialTheme.typography.labelLarge,
+            style = MaterialTheme.typography.labelMedium,
             fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
             color = primaryText,
             maxLines = 1,

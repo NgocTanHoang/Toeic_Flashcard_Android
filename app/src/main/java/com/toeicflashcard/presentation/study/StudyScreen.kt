@@ -258,7 +258,7 @@ fun StudyScreen(
                                         .fillMaxWidth()
                                         .padding(horizontal = 18.dp)
                                         .padding(bottom = 14.dp)
-                                        .heightIn(min = 102.dp),
+                                        .heightIn(min = 76.dp),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     AnimatedContent(

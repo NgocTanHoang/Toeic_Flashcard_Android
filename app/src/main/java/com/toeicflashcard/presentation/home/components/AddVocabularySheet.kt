@@ -9,8 +9,10 @@ import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
@@ -22,20 +24,16 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -46,7 +44,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.ContentCopy
 import androidx.compose.material.icons.rounded.FileUpload
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.LibraryAdd
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -350,6 +352,9 @@ private fun ManualAddWordForm(
     var partOfSpeech by remember { mutableStateOf("n.") }
     var meaningVi by remember { mutableStateOf("") }
     var topic by remember { mutableStateOf(AddCustomVocabularyUseCase.DEFAULT_CUSTOM_TOPIC) }
+    var topicDropdownExpanded by remember { mutableStateOf(false) }
+    var isCustomTopicInput by remember { mutableStateOf(false) }
+    var showOptionalFields by remember { mutableStateOf(false) }
     var exampleEn by remember { mutableStateOf("") }
     var exampleVi by remember { mutableStateOf("") }
     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -365,91 +370,224 @@ private fun ManualAddWordForm(
             }
         }
     }
+    val topicPillFill = if (glassColors.isDark) {
+        Color.White.copy(alpha = 0.08f)
+    } else {
+        Color.White.copy(alpha = 0.68f)
+    }
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        // 1. Core fields
         GlassTextInputField(
-            label = "Từ tiếng Anh *",
+            label = "Từ tiếng Anh",
             value = word,
             onValueChange = {
                 word = it
                 if (errorMessage != null) errorMessage = null
             },
-            placeholder = "Ví dụ: milestone, negotiate...",
+            placeholder = "Nhập từ vựng...",
             imeAction = ImeAction.Next
         )
 
         GlassTextInputField(
-            label = "Nghĩa tiếng Việt *",
+            label = "Nghĩa tiếng Việt",
             value = meaningVi,
             onValueChange = {
                 meaningVi = it
                 if (errorMessage != null) errorMessage = null
             },
-            placeholder = "Ví dụ: cột mốc quan trọng",
-            imeAction = ImeAction.Next
-        )
-
-        GlassTextInputField(
-            label = "Phiên âm IPA",
-            value = phonetic,
-            onValueChange = { phonetic = it },
-            placeholder = "Ví dụ: /ˈmaɪlstoʊn/ (tùy chọn)",
-            imeAction = ImeAction.Next
-        )
-
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            Text(
-                text = "Loại từ",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(items = PartOfSpeechChips, key = { it }) { pos ->
-                    FrostedSelectionChip(
-                        label = pos,
-                        selected = partOfSpeech == pos,
-                        onClick = { partOfSpeech = pos }
-                    )
-                }
-            }
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-            GlassTextInputField(
-                label = "Chủ đề",
-                value = topic,
-                onValueChange = { topic = it },
-                placeholder = AddCustomVocabularyUseCase.DEFAULT_CUSTOM_TOPIC,
-                imeAction = ImeAction.Next
-            )
-            LazyRow(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                items(items = topicSuggestions, key = { it }) { suggestion ->
-                    FrostedSelectionChip(
-                        label = suggestion,
-                        selected = topic.trim() == suggestion,
-                        onClick = { topic = suggestion }
-                    )
-                }
-            }
-        }
-
-        GlassTextInputField(
-            label = "Câu ví dụ tiếng Anh (tùy chọn)",
-            value = exampleEn,
-            onValueChange = { exampleEn = it },
-            placeholder = "Completing the audit was a major milestone.",
-            singleLine = false,
-            imeAction = ImeAction.Next
-        )
-
-        GlassTextInputField(
-            label = "Dịch nghĩa câu ví dụ (tùy chọn)",
-            value = exampleVi,
-            onValueChange = { exampleVi = it },
-            placeholder = "Hoàn thành kiểm toán là một cột mốc quan trọng.",
-            singleLine = false,
+            placeholder = "Nhập nghĩa tiếng Việt...",
             imeAction = ImeAction.Done
         )
+
+        // 2. Part of speech & Topic
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Text(
+                    text = "Loại từ",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    PartOfSpeechChips.forEach { pos ->
+                        FrostedSelectionChip(
+                            label = pos,
+                            selected = partOfSpeech == pos,
+                            onClick = { partOfSpeech = pos },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    text = "Chủ đề",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Box {
+                    Row(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(topicPillFill)
+                            .border(
+                                width = if (glassColors.isDark) 0.75.dp else 1.dp,
+                                brush = glassColors.defaultBorderBrush,
+                                shape = CircleShape
+                            )
+                            .clickable { topicDropdownExpanded = true }
+                            .padding(horizontal = 12.dp, vertical = 7.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = if (isCustomTopicInput && topic.isBlank()) {
+                                "Chủ đề mới..."
+                            } else {
+                                topic.ifBlank { AddCustomVocabularyUseCase.DEFAULT_CUSTOM_TOPIC }
+                            },
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.weight(1f, fill = false)
+                        )
+                        Icon(
+                            imageVector = Icons.Rounded.KeyboardArrowDown,
+                            contentDescription = "Chọn chủ đề",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = topicDropdownExpanded,
+                        onDismissRequest = { topicDropdownExpanded = false },
+                        modifier = Modifier.heightIn(max = 260.dp)
+                    ) {
+                        DropdownMenuItem(
+                            text = {
+                                Text(
+                                    text = "+ Nhập chủ đề mới...",
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            },
+                            onClick = {
+                                topicDropdownExpanded = false
+                                isCustomTopicInput = true
+                                if (topic == AddCustomVocabularyUseCase.DEFAULT_CUSTOM_TOPIC) {
+                                    topic = ""
+                                }
+                            }
+                        )
+                        topicSuggestions.forEach { suggestion ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(
+                                        text = suggestion,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                },
+                                onClick = {
+                                    topicDropdownExpanded = false
+                                    isCustomTopicInput = false
+                                    topic = suggestion
+                                }
+                            )
+                        }
+                    }
+                }
+            }
+
+            AnimatedVisibility(
+                visible = isCustomTopicInput,
+                enter = fadeIn(tween(160)) + expandVertically(tween(200)),
+                exit = fadeOut(tween(120)) + shrinkVertically(tween(160))
+            ) {
+                GlassTextInputField(
+                    label = "Tên chủ đề mới",
+                    value = topic,
+                    onValueChange = { topic = it },
+                    placeholder = "Ví dụ: Hợp đồng, Thuế...",
+                    imeAction = ImeAction.Done
+                )
+            }
+        }
+
+        // 3. Progressive Disclosure for IPA & Examples
+        Row(
+            modifier = Modifier
+                .clip(RoundedCornerShape(10.dp))
+                .clickable { showOptionalFields = !showOptionalFields }
+                .padding(horizontal = 4.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = if (showOptionalFields) {
+                    "Ẩn phiên âm IPA & Câu ví dụ"
+                } else {
+                    "+ Thêm phiên âm IPA & Câu ví dụ"
+                },
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Medium,
+                color = MaterialTheme.colorScheme.primary
+            )
+            if (showOptionalFields) {
+                Icon(
+                    imageVector = Icons.Rounded.KeyboardArrowUp,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = showOptionalFields,
+            enter = fadeIn(tween(180)) + expandVertically(tween(220)),
+            exit = fadeOut(tween(120)) + shrinkVertically(tween(180))
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                GlassTextInputField(
+                    label = "Phiên âm IPA",
+                    value = phonetic,
+                    onValueChange = { phonetic = it },
+                    placeholder = "/ˈmaɪlstoʊn/",
+                    imeAction = ImeAction.Next
+                )
+
+                GlassTextInputField(
+                    label = "Ví dụ tiếng Anh",
+                    value = exampleEn,
+                    onValueChange = { exampleEn = it },
+                    placeholder = "Nhập câu ví dụ...",
+                    singleLine = false,
+                    imeAction = ImeAction.Next
+                )
+
+                GlassTextInputField(
+                    label = "Dịch ví dụ",
+                    value = exampleVi,
+                    onValueChange = { exampleVi = it },
+                    placeholder = "Nhập dịch nghĩa...",
+                    singleLine = false,
+                    imeAction = ImeAction.Done
+                )
+            }
+        }
 
         if (errorMessage != null) {
             LiquidGlassCard(
@@ -482,7 +620,7 @@ private fun ManualAddWordForm(
                             phonetic = phonetic,
                             partOfSpeech = partOfSpeech,
                             meaningVi = meaningVi,
-                            topic = topic,
+                            topic = topic.ifBlank { AddCustomVocabularyUseCase.DEFAULT_CUSTOM_TOPIC },
                             exampleEn = exampleEn,
                             exampleVi = exampleVi
                         )
@@ -586,7 +724,7 @@ private fun JsonImportForm(
 
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = "File JSON cần chứa mảng đối tượng từ vựng với ít nhất 2 trường bắt buộc \"word\" và \"meaningVi\":",
+            text = "Định dạng JSON mẫu (bắt buộc word và meaningVi):",
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -756,7 +894,8 @@ private fun GlassTextInputField(
 private fun FrostedSelectionChip(
     label: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val bg = when {
@@ -772,7 +911,7 @@ private fun FrostedSelectionChip(
     }
 
     Box(
-        modifier = Modifier
+        modifier = modifier
             .clip(CircleShape)
             .background(bg)
             .border(
@@ -781,7 +920,7 @@ private fun FrostedSelectionChip(
                 shape = CircleShape
             )
             .clickable(onClick = onClick)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
+            .padding(horizontal = 6.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -789,7 +928,9 @@ private fun FrostedSelectionChip(
             style = MaterialTheme.typography.labelMedium,
             fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium,
             color = fg,
-            maxLines = 1
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis
         )
     }
 }

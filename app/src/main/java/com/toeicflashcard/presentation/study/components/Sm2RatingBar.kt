@@ -9,19 +9,26 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
-import com.toeicflashcard.core.ui.glass.rememberLiquidGlassBorderBrush
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.core.ui.theme.LocalSm2RatingColors
 import com.toeicflashcard.core.ui.theme.Sm2ColorPair
@@ -44,36 +51,25 @@ fun Sm2RatingBar(
         exit = fadeOut(),
         modifier = modifier
     ) {
-        Column(
+        Row(
             modifier = Modifier.fillMaxWidth(),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(7.dp)
         ) {
-            Text(
-                text = "Đánh giá mức độ ghi nhớ",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 4.dp)
-            )
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                ReviewQuality.entries.forEach { quality ->
-                    val palette = when (quality) {
-                        ReviewQuality.AGAIN -> sm2Colors.again
-                        ReviewQuality.HARD -> sm2Colors.hard
-                        ReviewQuality.GOOD -> sm2Colors.good
-                        ReviewQuality.EASY -> sm2Colors.easy
-                    }
-                    Sm2GlassPillButton(
-                        label = quality.labelVi,
-                        intervalHint = intervalPreviews[quality].orEmpty(),
-                        colors = palette,
-                        onClick = { onSelectQuality(quality) },
-                        modifier = Modifier.weight(1f)
-                    )
+            ReviewQuality.entries.forEach { quality ->
+                val palette = when (quality) {
+                    ReviewQuality.AGAIN -> sm2Colors.again
+                    ReviewQuality.HARD -> sm2Colors.hard
+                    ReviewQuality.GOOD -> sm2Colors.good
+                    ReviewQuality.EASY -> sm2Colors.easy
                 }
+                Sm2GlassPillButton(
+                    quality = quality,
+                    label = quality.labelVi,
+                    intervalHint = intervalPreviews[quality].orEmpty(),
+                    colors = palette,
+                    onClick = { onSelectQuality(quality) },
+                    modifier = Modifier.weight(1f)
+                )
             }
         }
     }
@@ -81,6 +77,7 @@ fun Sm2RatingBar(
 
 @Composable
 private fun Sm2GlassPillButton(
+    quality: ReviewQuality,
     label: String,
     intervalHint: String,
     colors: Sm2ColorPair,
@@ -88,19 +85,86 @@ private fun Sm2GlassPillButton(
     modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    val isDark = glassColors.isDark
+
+    val containerColor: Color
+    val labelColor: Color
+    val intervalColor: Color
+    val borderBrush: Brush
+    val shadowModifier: Modifier
+
+    if (!isDark) {
+        val (accent, labelTint, intervalTint) = when (quality) {
+            ReviewQuality.AGAIN -> Triple(
+                Color(0xFFEF4444),
+                Color(0xFFDC2626),
+                Color(0xFF991B1B).copy(alpha = 0.82f)
+            )
+            ReviewQuality.HARD -> Triple(
+                Color(0xFFF59E0B),
+                Color(0xFFD97706),
+                Color(0xFF92400E).copy(alpha = 0.84f)
+            )
+            ReviewQuality.GOOD -> Triple(
+                Color(0xFF2563EB),
+                Color(0xFF1D4ED8),
+                Color(0xFF1E3A8A).copy(alpha = 0.82f)
+            )
+            ReviewQuality.EASY -> Triple(
+                Color(0xFF10B981),
+                Color(0xFF059669),
+                Color(0xFF065F46).copy(alpha = 0.84f)
+            )
+        }
+        containerColor = Color.White.copy(alpha = 0.92f)
+        labelColor = labelTint
+        intervalColor = intervalTint
+        borderBrush = remember(accent) {
+            Brush.linearGradient(
+                colors = listOf(
+                    accent.copy(alpha = 0.85f),
+                    accent.copy(alpha = 0.55f)
+                )
+            )
+        }
+        shadowModifier = Modifier.shadow(
+            elevation = 4.dp,
+            shape = Sm2PillShape,
+            ambientColor = accent.copy(alpha = 0.14f),
+            spotColor = accent.copy(alpha = 0.22f)
+        )
+    } else {
+        containerColor = colors.container
+        labelColor = colors.content
+        intervalColor = colors.content.copy(alpha = 0.85f)
+        borderBrush = remember(colors.content) {
+            Brush.linearGradient(
+                colors = listOf(
+                    colors.content.copy(alpha = 0.60f),
+                    colors.content.copy(alpha = 0.24f)
+                )
+            )
+        }
+        shadowModifier = Modifier
+    }
+
+    var labelFontSizeSp by remember(label) { mutableFloatStateOf(13f) }
+
     LiquidGlassCard(
         onClick = onClick,
         shape = Sm2PillShape,
-        containerColor = colors.container,
-        borderWidth = if (glassColors.isDark) 0.75.dp else 1.dp,
-        borderBrush = rememberLiquidGlassBorderBrush(glassColors, accentColor = colors.border),
-        modifier = modifier.heightIn(min = 66.dp)
+        containerColor = containerColor,
+        borderWidth = if (isDark) 0.9.dp else 1.dp,
+        borderBrush = borderBrush,
+        modifier = modifier
+            .height(64.dp)
+            .then(shadowModifier)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(min = 66.dp)
-                .padding(horizontal = 6.dp, vertical = 10.dp),
+                .height(64.dp)
+                .padding(horizontal = 4.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {
             Column(
@@ -109,17 +173,27 @@ private fun Sm2GlassPillButton(
             ) {
                 Text(
                     text = label,
-                    style = MaterialTheme.typography.labelLarge,
+                    style = MaterialTheme.typography.labelLarge.copy(
+                        fontSize = labelFontSizeSp.sp,
+                        letterSpacing = (-0.2).sp
+                    ),
                     fontWeight = FontWeight.Bold,
-                    color = colors.content,
+                    color = labelColor,
                     maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis,
+                    onTextLayout = { result ->
+                        if (result.hasVisualOverflow && labelFontSizeSp > 10.5f) {
+                            labelFontSizeSp = (labelFontSizeSp - 0.5f).coerceAtLeast(10.5f)
+                        }
+                    }
                 )
                 Text(
                     text = intervalHint,
-                    style = MaterialTheme.typography.labelSmall,
-                    color = colors.content.copy(alpha = 0.88f),
+                    style = MaterialTheme.typography.labelSmall.copy(fontSize = 11.sp),
+                    color = intervalColor,
                     maxLines = 1,
+                    softWrap = false,
                     overflow = TextOverflow.Ellipsis
                 )
             }

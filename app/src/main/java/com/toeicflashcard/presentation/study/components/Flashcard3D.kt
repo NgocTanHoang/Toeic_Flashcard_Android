@@ -9,12 +9,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -103,6 +105,7 @@ fun Flashcard3D(
         } else {
             FlashcardBackFace(
                 word = word,
+                onSpeakWord = onSpeakWord,
                 onSpeakExample = onSpeakExample,
                 modifier = Modifier.graphicsLayer {
                     rotationY = 180f
@@ -235,14 +238,20 @@ private fun FlashcardFrontFace(
 @Composable
 private fun FlashcardBackFace(
     word: VocabularyWord,
+    onSpeakWord: () -> Unit,
     onSpeakExample: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val exampleWashBg = if (glassColors.isDark) {
-        Color.White.copy(alpha = 0.04f)
+        Color.White.copy(alpha = 0.055f)
     } else {
-        Color.White.copy(alpha = 0.45f)
+        Color(0xFFF0F5FC)
+    }
+    val exampleBorderColor = if (glassColors.isDark) {
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.55f)
+    } else {
+        Color(0xFFCFDDF0)
     }
     val accentFg = MaterialTheme.colorScheme.primary
     val dividerBrush = remember(glassColors.divider) {
@@ -255,139 +264,153 @@ private fun FlashcardBackFace(
         )
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(28.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top
-        ) {
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Text(
-                    text = word.word,
-                    style = MaterialTheme.typography.headlineMedium,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                val backMeta = if (word.phonetic.isNotBlank()) {
-                    "${word.phonetic}  •  ${word.partOfSpeech}"
-                } else {
-                    word.partOfSpeech
-                }
-                Text(
-                    text = backMeta,
-                    style = MaterialTheme.typography.labelLarge,
-                    color = accentFg
-                )
-            }
-        }
-
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            Text(
-                text = "NGHĨA TIẾNG VIỆT",
-                style = MaterialTheme.typography.labelSmall,
-                letterSpacing = 0.8.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = word.meaningVi,
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(0.8.dp)
-                .background(dividerBrush)
-        )
-
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        val minFaceHeight = maxHeight
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .clip(ExampleBoxShape)
-                .background(exampleWashBg)
-                .border(
-                    width = if (glassColors.isDark) 0.75.dp else 0.8.dp,
-                    brush = glassColors.defaultBorderBrush,
-                    shape = ExampleBoxShape
-                )
-                .padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
+                .verticalScroll(rememberScrollState())
+                .heightIn(min = minFaceHeight)
+                .padding(horizontal = 26.dp, vertical = 26.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
+            // Zone 1: Word + IPA + POS + compact speaker
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "Ví dụ ngữ cảnh",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                if (word.exampleEn.isNotBlank()) {
-                    LiquidGlassIconButton(
-                        onClick = onSpeakExample,
-                        size = 40.dp,
-                        containerColor = MaterialTheme.colorScheme.primary.copy(
-                            alpha = if (glassColors.isDark) 0.14f else 0.16f
-                        ),
-                        contentColor = MaterialTheme.colorScheme.primary
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
-                            contentDescription = "Đọc câu ví dụ",
-                            modifier = Modifier.size(20.dp)
-                        )
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = word.word,
+                        style = MaterialTheme.typography.headlineMedium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    val backMeta = if (word.phonetic.isNotBlank()) {
+                        "${word.phonetic}  •  ${word.partOfSpeech}"
+                    } else {
+                        word.partOfSpeech
                     }
+                    Text(
+                        text = backMeta,
+                        style = MaterialTheme.typography.labelLarge,
+                        color = accentFg
+                    )
+                }
+
+                LiquidGlassIconButton(
+                    onClick = onSpeakWord,
+                    size = 36.dp,
+                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                    contentColor = MaterialTheme.colorScheme.primary
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
+                        contentDescription = "Phát âm từ ${word.word}",
+                        modifier = Modifier.size(18.dp)
+                    )
                 }
             }
 
-            if (word.exampleEn.isNotBlank()) {
-                Text(
-                    text = word.exampleEn,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = MaterialTheme.colorScheme.onSurface
+            // Zone 2: Divider + Vietnamese Meaning
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(18.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(0.8.dp)
+                        .background(dividerBrush)
                 )
 
-                if (word.exampleVi.isNotBlank()) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
-                        text = word.exampleVi,
+                        text = "NGHĨA TIẾNG VIỆT",
+                        style = MaterialTheme.typography.labelSmall,
+                        letterSpacing = 0.8.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = word.meaningVi,
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+            }
+
+            // Zone 3: Context Example Card
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(ExampleBoxShape)
+                    .background(exampleWashBg)
+                    .border(
+                        width = if (glassColors.isDark) 0.85.dp else 1.dp,
+                        color = exampleBorderColor,
+                        shape = ExampleBoxShape
+                    )
+                    .padding(18.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "Ví dụ ngữ cảnh",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    if (word.exampleEn.isNotBlank()) {
+                        LiquidGlassIconButton(
+                            onClick = onSpeakExample,
+                            size = 40.dp,
+                            containerColor = MaterialTheme.colorScheme.primary.copy(
+                                alpha = if (glassColors.isDark) 0.14f else 0.16f
+                            ),
+                            contentColor = MaterialTheme.colorScheme.primary
+                        ) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
+                                contentDescription = "Đọc câu ví dụ",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                if (word.exampleEn.isNotBlank()) {
+                    Text(
+                        text = word.exampleEn,
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    if (word.exampleVi.isNotBlank()) {
+                        Text(
+                            text = word.exampleVi,
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontStyle = FontStyle.Italic,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                } else {
+                    Text(
+                        text = "Chưa có câu ví dụ cho từ này.",
                         style = MaterialTheme.typography.bodyMedium,
-                        fontStyle = FontStyle.Italic,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-            } else {
-                Text(
-                    text = "Chưa có câu ví dụ cho từ này.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
             }
-        }
-
-        Spacer(modifier = Modifier.weight(1f, fill = false))
-
-        Box(
-            modifier = Modifier.fillMaxWidth(),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = "Chạm để lật lại mặt trước",
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
-            )
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.toeicflashcard.presentation.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -41,17 +42,26 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onSizeChanged
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.toeicflashcard.core.ui.glass.CollapsibleHeaderSpring
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
@@ -64,6 +74,7 @@ import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeChild
+import kotlin.math.roundToInt
 
 private val TopicCardShape = RoundedCornerShape(20.dp)
 
@@ -217,6 +228,7 @@ fun FloatingGlassHomeHeader(
     totalCount: Int,
     topicCount: Int,
     topicQuery: String,
+    isCollapsed: Boolean = false,
     onTopicQueryChange: (String) -> Unit,
     onOpenDeckSwitcher: () -> Unit,
     onOpenReminderSettings: () -> Unit,
@@ -224,8 +236,23 @@ fun FloatingGlassHomeHeader(
     contentHazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
+    val density = LocalDensity.current
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
+    var topRowHeightPx by remember { mutableIntStateOf(0) }
+    val collapseProgressState = animateFloatAsState(
+        targetValue = if (isCollapsed) 1f else 0f,
+        animationSpec = CollapsibleHeaderSpring,
+        label = "home_header_collapse"
+    )
+    val extraTopGapPx = remember(density) { with(density) { 8.dp.toPx() } }
+    val extraSideMarginPx = remember(density) { with(density) { 16.dp.toPx() } }
+    val floatingShadowPx = remember(density, glassColors.isDark) {
+        with(density) { (if (glassColors.isDark) 8.dp else 10.dp).toPx() }
+    }
+    val ambientShadowTint = Color(0xFF0F172A).copy(alpha = if (glassColors.isDark) 0.45f else 0.16f)
+    val spotShadowTint = Color(0xFF0F172A).copy(alpha = if (glassColors.isDark) 0.55f else 0.24f)
+
     val headerTint = if (glassColors.isDark) {
         glassColors.hazeBackground.copy(alpha = glassOpacity)
     } else {
@@ -243,63 +270,125 @@ fun FloatingGlassHomeHeader(
         )
     }
 
-    Column(
-        modifier = modifier
-            .hazeChild(
-                state = contentHazeState,
-                style = headerHazeStyle
-            )
-            .statusBarsPadding()
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 10.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            DeckSwitcherPill(
-                selectedDeckName = selectedDeckName,
-                totalCount = totalCount,
-                topicCount = topicCount,
-                onClick = onOpenDeckSwitcher,
-                modifier = Modifier.weight(1f)
-            )
-
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                LiquidGlassIconButton(
-                    onClick = onOpenReminderSettings,
-                    size = 40.dp
-                ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Settings,
-                        contentDescription = "Cài đặt nhắc nhở",
-                        modifier = Modifier.size(20.dp)
-                    )
-                }
-
-                ThemeQuickToggleGlassButton(
-                    isDark = glassColors.isDark,
-                    onClick = { onToggleLightDark(glassColors.isDark) }
-                )
-            }
-        }
-
-        LiquidGlassSearchCapsule(
-            query = topicQuery,
-            placeholder = "Tìm trong $topicCount chủ đề (Marketing, Thuế...)",
-            onQueryChange = onTopicQueryChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 18.dp, end = 18.dp, bottom = 12.dp)
-        )
-
+    Box(modifier = modifier) {
+        // Layer 1: Full-bleed frosted header backdrop fading cleanly when collapsed
         Box(
             modifier = Modifier
+                .matchParentSize()
+                .graphicsLayer {
+                    val p = collapseProgressState.value
+                    alpha = (1f - p).coerceIn(0f, 1f)
+                    translationY = -topRowHeightPx * 0.5f * p
+                }
+                .hazeChild(
+                    state = contentHazeState,
+                    style = headerHazeStyle
+                )
+        ) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(0.6.dp)
+                    .background(glassColors.divider)
+            )
+        }
+
+        // Layer 2: Collapsing top bar + Sticky floating frosted search pill
+        Column(
+            modifier = Modifier
                 .fillMaxWidth()
-                .height(0.6.dp)
-                .background(glassColors.divider)
-        )
+                .statusBarsPadding()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clipToBounds()
+                    .onSizeChanged {
+                        if (it.height > 0) topRowHeightPx = it.height
+                    }
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .graphicsLayer {
+                            val p = collapseProgressState.value
+                            translationY = -topRowHeightPx * p
+                            alpha = (1f - p * 1.35f).coerceIn(0f, 1f)
+                        }
+                        .padding(horizontal = 18.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    DeckSwitcherPill(
+                        selectedDeckName = selectedDeckName,
+                        totalCount = totalCount,
+                        topicCount = topicCount,
+                        enabled = !isCollapsed,
+                        onClick = onOpenDeckSwitcher,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        LiquidGlassIconButton(
+                            onClick = onOpenReminderSettings,
+                            size = 40.dp,
+                            enabled = !isCollapsed
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.Settings,
+                                contentDescription = "Cài đặt nhắc nhở",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        ThemeQuickToggleGlassButton(
+                            isDark = glassColors.isDark,
+                            enabled = !isCollapsed,
+                            onClick = { onToggleLightDark(glassColors.isDark) }
+                        )
+                    }
+                }
+            }
+
+            LiquidGlassSearchCapsule(
+                query = topicQuery,
+                placeholder = "Tìm trong $topicCount chủ đề (Marketing, Thuế...)",
+                onQueryChange = onTopicQueryChange,
+                hazeState = contentHazeState,
+                floatingBlurRadius = 18.dp,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(start = 18.dp, end = 18.dp, bottom = 12.dp)
+                    .layout { measurable, constraints ->
+                        val inset = (extraSideMarginPx * collapseProgressState.value).roundToInt()
+                        val narrowedMaxWidth = (constraints.maxWidth - inset * 2).coerceAtLeast(0)
+                        val placeable = measurable.measure(
+                            constraints.copy(
+                                minWidth = constraints.minWidth.coerceAtMost(narrowedMaxWidth),
+                                maxWidth = narrowedMaxWidth
+                            )
+                        )
+                        val outerWidth = constraints.maxWidth.coerceAtLeast(placeable.width)
+                        layout(outerWidth, placeable.height) {
+                            placeable.placeRelative(
+                                x = (outerWidth - placeable.width) / 2,
+                                y = 0
+                            )
+                        }
+                    }
+                    .graphicsLayer {
+                        val p = collapseProgressState.value
+                        val travel = (topRowHeightPx - extraTopGapPx).coerceAtLeast(0f)
+                        translationY = -travel * p
+                        shadowElevation = floatingShadowPx * p
+                        shape = CircleShape
+                        clip = false
+                        ambientShadowColor = ambientShadowTint
+                        spotShadowColor = spotShadowTint
+                    }
+            )
+        }
     }
 }
 
@@ -308,6 +397,7 @@ private fun DeckSwitcherPill(
     selectedDeckName: String,
     totalCount: Int,
     topicCount: Int,
+    enabled: Boolean = true,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -316,6 +406,15 @@ private fun DeckSwitcherPill(
         Color.White.copy(alpha = 0.08f)
     } else {
         Color.White.copy(alpha = 0.68f)
+    }
+    val clickModifier = if (enabled) {
+        Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = ripple(bounded = true, color = MaterialTheme.colorScheme.primary),
+            onClick = onClick
+        )
+    } else {
+        Modifier
     }
 
     Column(
@@ -327,11 +426,7 @@ private fun DeckSwitcherPill(
                 brush = glassColors.defaultBorderBrush,
                 shape = RoundedCornerShape(16.dp)
             )
-            .clickable(
-                interactionSource = remember { MutableInteractionSource() },
-                indication = ripple(bounded = true, color = MaterialTheme.colorScheme.primary),
-                onClick = onClick
-            )
+            .then(clickModifier)
             .padding(horizontal = 12.dp, vertical = 7.dp),
         verticalArrangement = Arrangement.spacedBy(1.dp)
     ) {
@@ -368,11 +463,13 @@ private fun DeckSwitcherPill(
 @Composable
 private fun ThemeQuickToggleGlassButton(
     isDark: Boolean,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     LiquidGlassIconButton(
         onClick = onClick,
-        size = 40.dp
+        size = 40.dp,
+        enabled = enabled
     ) {
         AnimatedContent(
             targetState = isDark,

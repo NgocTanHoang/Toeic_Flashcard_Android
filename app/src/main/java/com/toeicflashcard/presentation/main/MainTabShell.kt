@@ -38,6 +38,7 @@ import com.toeicflashcard.core.ui.glass.DockScrollController
 import com.toeicflashcard.core.ui.glass.LiquidGlassBottomDock
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.MainDockTab
+import com.toeicflashcard.core.ui.glass.rememberCollapsibleHeaderState
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
 import com.toeicflashcard.presentation.home.FloatingGlassHomeHeader
 import com.toeicflashcard.presentation.home.HomeScreen
@@ -101,6 +102,7 @@ fun MainTabShell(
     val glassColors = LocalLiquidGlassColors.current
     val contentHazeState = remember { HazeState() }
     val dockScrollController = remember { DockScrollController() }
+    val collapsibleHeaderState = rememberCollapsibleHeaderState(dockScrollController)
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
 
@@ -117,7 +119,7 @@ fun MainTabShell(
     }
 
     LaunchedEffect(selectedTab) {
-        dockScrollController.show()
+        collapsibleHeaderState.expand()
     }
 
     LaunchedEffect(selectedTab, activeListState) {
@@ -127,7 +129,7 @@ fun MainTabShell(
             .distinctUntilChanged()
             .collect { atBoundary ->
                 if (atBoundary) {
-                    dockScrollController.show()
+                    collapsibleHeaderState.expand()
                 }
             }
     }
@@ -158,7 +160,7 @@ fun MainTabShell(
                             topicQuery = homeQuery,
                             headerHeightDp = homeHeaderHeightDp,
                             listState = homeListState,
-                            nestedScrollConnection = dockScrollController.nestedScrollConnection,
+                            nestedScrollConnection = collapsibleHeaderState.nestedScrollConnection,
                             onSelectDailyGoal = homeViewModel::updateDailyGoal,
                             onStartDueReview = onStartDueReview,
                             onSelectTopic = onSelectTopic
@@ -172,7 +174,7 @@ fun MainTabShell(
                             query = vaultQuery,
                             headerHeightDp = vaultHeaderHeightDp,
                             listState = vaultListState,
-                            nestedScrollConnection = dockScrollController.nestedScrollConnection,
+                            nestedScrollConnection = collapsibleHeaderState.nestedScrollConnection,
                             onShowMessage = { msg ->
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(msg)
@@ -183,15 +185,11 @@ fun MainTabShell(
 
                     MainDockTab.PRACTICE -> {
                         PracticeScreen(
-                            dueTodayCount = homeState.dueTodayCount,
-                            totalCount = homeState.totalCount,
-                            speechRate = homeState.speechRate,
                             headerHeightDp = practiceHeaderHeightDp,
                             listState = practiceListState,
                             nestedScrollConnection = dockScrollController.nestedScrollConnection,
                             onOpenStandardQuiz = { quizScopeMode = QuizScopeLaunchMode.STANDARD },
-                            onOpenListeningQuiz = { quizScopeMode = QuizScopeLaunchMode.LISTENING },
-                            onToggleSpeechRate = homeViewModel::toggleSpeechRate
+                            onOpenListeningQuiz = { quizScopeMode = QuizScopeLaunchMode.LISTENING }
                         )
                     }
 
@@ -232,6 +230,7 @@ fun MainTabShell(
                         totalCount = homeState.totalCount,
                         topicCount = homeState.topics.size,
                         topicQuery = homeQuery,
+                        isCollapsed = collapsibleHeaderState.isCollapsed,
                         onTopicQueryChange = { next ->
                             homeQuery = next
                             homeViewModel.updateSearchQuery(next)
@@ -252,7 +251,7 @@ fun MainTabShell(
                         totalCount = vaultState.totalCount,
                         query = vaultQuery,
                         selectedFilter = vaultState.selectedFilter,
-                        counts = vaultState.counts,
+                        isCollapsed = collapsibleHeaderState.isCollapsed,
                         contentHazeState = contentHazeState,
                         onQueryChange = { next ->
                             vaultQuery = next
@@ -271,6 +270,8 @@ fun MainTabShell(
                     FloatingPracticeHeader(
                         selectedDeckName = homeState.selectedDeckName,
                         totalCount = homeState.totalCount,
+                        speechRate = homeState.speechRate,
+                        onToggleSpeechRate = homeViewModel::toggleSpeechRate,
                         contentHazeState = contentHazeState,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -297,7 +298,7 @@ fun MainTabShell(
             selectedTab = selectedTab,
             onSelectTab = { nextTab ->
                 selectedTab = nextTab
-                dockScrollController.show()
+                collapsibleHeaderState.expand()
             },
             visible = dockScrollController.isVisible && !isOverlayOpen,
             hazeState = contentHazeState,
