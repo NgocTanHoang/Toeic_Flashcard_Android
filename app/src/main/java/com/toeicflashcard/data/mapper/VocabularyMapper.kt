@@ -41,7 +41,8 @@ fun VocabularyEntity.toDomain(): VocabularyWord {
         nextReviewTimestamp = nextReviewTimestamp,
         lastReviewedTimestamp = lastReviewedTimestamp,
         deckId = deckId,
-        deckName = deckName
+        deckName = deckName,
+        isStarred = isStarred
     )
 }
 
@@ -61,6 +62,7 @@ fun VocabularyWord.toEntity(): VocabularyEntity {
         nextReviewTimestamp = nextReviewTimestamp,
         lastReviewedTimestamp = lastReviewedTimestamp,
         deckId = deckId,
-        deckName = deckName
+        deckName = deckName,
+        isStarred = isStarred
     )
 }

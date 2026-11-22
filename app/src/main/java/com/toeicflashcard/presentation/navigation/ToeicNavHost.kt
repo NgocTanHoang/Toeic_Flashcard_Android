@@ -32,6 +32,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavDestination.Companion.hasRoute
@@ -43,6 +44,7 @@ import androidx.navigation.toRoute
 import com.toeicflashcard.core.ui.glass.AppWindowMetrics
 import com.toeicflashcard.core.ui.glass.LocalAppWindowMetrics
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
+import com.toeicflashcard.presentation.home.DeckTopicsScreen
 import com.toeicflashcard.presentation.home.HomeViewModel
 import com.toeicflashcard.presentation.main.MainTabShell
 import com.toeicflashcard.presentation.quiz.QuizScreen
@@ -53,6 +55,11 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data object HomeRoute
+
+@Serializable
+data class DeckTopicsRoute(
+    val deckId: String
+)
 
 @Serializable
 data class StudyRoute(
@@ -137,6 +144,9 @@ fun ToeicNavHost() {
                         )
                     )
                 },
+                onOpenDeckTopics = { deckId ->
+                    navigateToOverlay(DeckTopicsRoute(deckId = deckId))
+                },
                 onSelectTopic = { topic ->
                     val activeDeckId = homeViewModel.uiState.value.selectedDeckId
                     navigateToOverlay(
@@ -184,6 +194,45 @@ fun ToeicNavHost() {
             }
         ) {
             composable<HomeRoute> {}
+
+            composable<DeckTopicsRoute> { backStackEntry ->
+                val route = backStackEntry.toRoute<DeckTopicsRoute>()
+                val homeState by homeViewModel.uiState.collectAsStateWithLifecycle()
+                LaunchedEffect(route.deckId) {
+                    if (homeState.selectedDeckId != route.deckId) {
+                        homeViewModel.selectDeck(route.deckId)
+                    }
+                }
+                OverlayRouteHost(
+                    isDark = glassColors.isDark,
+                    onSettledChanged = { isOverlaySettled = it }
+                ) {
+                    DeckTopicsScreen(
+                        selectedDeckId = route.deckId,
+                        topics = homeState.topics,
+                        learnedCount = homeState.learnedCount,
+                        totalCount = homeState.totalCount,
+                        onSelectTopic = { topic ->
+                            if (backStackEntry.canNavigate()) {
+                                focusManager.clearFocus(force = true)
+                                navController.navigate(
+                                    StudyRoute(
+                                        topic = topic,
+                                        hardWordsOnly = false,
+                                        deckId = route.deckId
+                                    )
+                                )
+                            }
+                        },
+                        onNavigateBack = {
+                            if (backStackEntry.canNavigate()) {
+                                isOverlaySettled = false
+                                navController.popBackStack()
+                            }
+                        }
+                    )
+                }
+            }
 
             composable<StudyRoute> { backStackEntry ->
                 val route = backStackEntry.toRoute<StudyRoute>()

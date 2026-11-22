@@ -66,6 +66,8 @@ class VocabularyVaultViewModelTest {
         override suspend fun setThemeMode(mode: ThemeMode) = Unit
         override suspend fun setDarkTone(tone: DarkTone, forceDarkMode: Boolean) = Unit
         override suspend fun setSpeechRate(rate: Float) = Unit
+        override suspend fun setAutoPlayTts(enabled: Boolean) = Unit
+        override suspend fun setEnableHapticFeedback(enabled: Boolean) = Unit
         override suspend fun setReminderSettings(enabled: Boolean, hour: Int, minute: Int) = Unit
         override suspend fun recordStudyReview(todayEpochDay: Long, calculator: StreakCalculator) = Unit
         override fun previewGlassOpacity(opacity: Float?) = Unit

@@ -1,6 +1,6 @@
-# Tài Liệu Kỹ Thuật — TOEIC Flashcard (`v1.3.0`)
+# Tài Liệu Kỹ Thuật — Lexora (`v1.4.0`)
 
-Tài liệu này mô tả kiến trúc phần mềm, thuật toán SM-2, hệ thống giao diện thích ứng đa thiết bị (Phone / Foldable / Tablet), đồ họa Apple Liquid Glass 120Hz ARR, lưu trữ Room v3, bảo mật chữ ký số và quy trình CI/CD của **TOEIC Flashcard**.
+Tài liệu này mô tả kiến trúc phần mềm, thuật toán SM-2, hệ thống giao diện thích ứng đa thiết bị (Phone / Foldable / Tablet), đồ họa Apple Liquid Glass 120Hz ARR, lưu trữ Room v4, bảo mật chữ ký số và quy trình CI/CD của **Lexora** (*TOEIC Vocabulary • SM-2*).
 
 ---
 
@@ -13,13 +13,14 @@ Tài liệu này mô tả kiến trúc phần mềm, thuật toán SM-2, hệ th
   - Engines: `Sm2Scheduler`, `StreakCalculator`.
   - 6 Use Cases: `ObserveHomeSummaryUseCase`, `GetStudyQueueUseCase`, `SubmitReviewUseCase`, `GenerateQuizUseCase`, `MarkWordsUrgentReviewUseCase`, `AddCustomVocabularyUseCase`.
 - **Tầng `data/`:**
-  - `ToeicDatabase` (`version = 3`), `VocabularyDao`, `VocabularySeeder` (`SEED_VERSION = 3` bảo vệ bởi `Mutex`).
+  - `ToeicDatabase` (`version = 4`, bổ sung `isStarred` + migration v3→v4), `VocabularyDao`, `VocabularySeeder` (`SEED_VERSION = 3` bảo vệ bởi `Mutex`).
   - `VocabularyRepositoryImpl` (kết hợp in-memory cache để mở `StudyScreen` / `QuizScreen` với `0ms` loading flash).
-  - `UserPreferencesDataStore` (`13` khóa Preferences + preview độ đục kính thời gian thực trong bộ nhớ).
-  - `DailyReminderWorker` (`WorkManager` chu kỳ 24 giờ).
+  - `UserPreferencesDataStore` (`13` khóa Preferences + `hasCompletedOnboarding` + preview độ đục kính thời gian thực trong bộ nhớ).
+  - `DailyReminderWorker` (`WorkManager` chu kỳ 24 giờ) và `ReminderBootReceiver` (`BOOT_COMPLETED` / `MY_PACKAGE_REPLACED`).
 - **Tầng `presentation/`:**
-  - `ToeicNavHost` giữ ấm `MainTabShell` khi đẩy overlay `StudyRoute` và `QuizRoute`.
-  - `MainTabShell` quản lý `HazeSource` dùng chung, `CollapsibleHeaderState`, `LiquidGlassBottomDock` và các in-window bottom sheets/dialogs.
+  - `ToeicNavHost` giữ ấm `MainTabShell` khi đẩy các overlay routes `DeckTopicsRoute`, `StudyRoute` và `QuizRoute`.
+  - `MainTabShell` quản lý `HazeSource` dùng chung, `CollapsibleHeaderState` (hỗ trợ ngưỡng cuộn tùy chỉnh `collapseThresholdPx`, `expandThresholdPx = 52.dp` trên `DeckTopicsScreen`), `LiquidGlassBottomDock` và các in-window bottom sheets/dialogs (`WordDetailSheet`, `OnboardingSheet`, `AddVocabularySheet`, `ReminderSettingsSheet`).
+  - **Kiểm thử tự động:** 19 bộ Unit Test JVM (`Phase1CoreLearningTest`, `Phase2VaultAndSyncTest`, `Phase3TtsAndReminderTest`, `Phase4OnboardingTest`, `ResponsiveAndIconJvmRenderTest`, `SystemFlowAndAdaptiveUiTest`, v.v.).
 
 ---
 

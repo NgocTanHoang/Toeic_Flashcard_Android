@@ -29,6 +29,8 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items as lazyRowItems
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
@@ -40,6 +42,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.Star
+import androidx.compose.material.icons.rounded.StarOutline
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -108,6 +112,7 @@ fun VocabularyVaultScreen(
     headerHeightDp: Dp,
     gridState: LazyGridState,
     nestedScrollConnection: NestedScrollConnection,
+    onSelectWord: (VocabularyWord) -> Unit = {},
     onShowMessage: (String) -> Unit
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -203,10 +208,14 @@ fun VocabularyVaultScreen(
                             val onSpeak = remember(word.word, viewModel) {
                                 { viewModel.speakWord(word.word) }
                             }
+                            val onCardClick = remember(word, onSelectWord) {
+                                { onSelectWord(word) }
+                            }
                             VaultWordCard(
                                 word = word,
                                 isWide = isWide,
-                                onSpeak = onSpeak
+                                onSpeak = onSpeak,
+                                onClick = onCardClick
                             )
                         }
                     }
@@ -365,77 +374,119 @@ fun FloatingVaultHeader(
                 }
             }
 
-            LiquidGlassSearchCapsule(
-                query = query,
-                placeholder = "Tìm trong $formattedTotalCount từ...",
-                onQueryChange = onQueryChange,
-                hazeState = contentHazeState,
-                floatingBlurRadius = 18.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = horizPad)
-                    .layout { measurable, constraints ->
-                        val inset = (extraSideMarginPx * collapseProgressState.value).roundToInt()
-                        val narrowedMaxWidth = (constraints.maxWidth - inset * 2).coerceAtLeast(0)
-                        val placeable = measurable.measure(
-                            constraints.copy(
-                                minWidth = constraints.minWidth.coerceAtMost(narrowedMaxWidth),
-                                maxWidth = narrowedMaxWidth
-                            )
-                        )
-                        val outerWidth = constraints.maxWidth.coerceAtLeast(placeable.width)
-                        layout(outerWidth, placeable.height) {
-                            placeable.placeRelative(
-                                x = (outerWidth - placeable.width) / 2,
-                                y = 0
-                            )
-                        }
-                    }
-                    .graphicsLayer {
-                        val p = collapseProgressState.value
-                        val travel = (topRowHeightPx - extraTopGapPx).coerceAtLeast(0f)
-                        translationY = -travel * p
-                        shadowElevation = floatingShadowPx * p
-                        shape = CircleShape
-                        clip = false
-                        ambientShadowColor = ambientShadowTint
-                        spotShadowColor = spotShadowTint
-                    }
-            )
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clipToBounds()
-                    .onSizeChanged {
-                        if (it.height > 0) filterRowHeightPx = it.height
-                    }
-            ) {
+            val isWideLandscape = LocalConfiguration.current.screenWidthDp.dp >= 900.dp
+            if (isWideLandscape) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .padding(start = horizPad, end = horizPad, bottom = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    LiquidGlassSearchCapsule(
+                        query = query,
+                        placeholder = "Tìm trong $formattedTotalCount từ...",
+                        onQueryChange = onQueryChange,
+                        hazeState = contentHazeState,
+                        floatingBlurRadius = 18.dp,
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        VaultFilter.entries.forEach { filter ->
+                            val filterCount = counts[filter]
+                            val chipLabel = if (filterCount != null && filter != VaultFilter.ALL) {
+                                "${filter.label} ($filterCount)"
+                            } else {
+                                filter.label
+                            }
+                            VaultFilterChip(
+                                label = chipLabel,
+                                selected = selectedFilter == filter,
+                                interactive = !isCollapsed,
+                                onClick = { onSelectFilter(filter) }
+                            )
+                        }
+                    }
+                }
+            } else {
+                LiquidGlassSearchCapsule(
+                    query = query,
+                    placeholder = "Tìm trong $formattedTotalCount từ...",
+                    onQueryChange = onQueryChange,
+                    hazeState = contentHazeState,
+                    floatingBlurRadius = 18.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = horizPad)
+                        .layout { measurable, constraints ->
+                            val inset = (extraSideMarginPx * collapseProgressState.value).roundToInt()
+                            val narrowedMaxWidth = (constraints.maxWidth - inset * 2).coerceAtLeast(0)
+                            val placeable = measurable.measure(
+                                constraints.copy(
+                                    minWidth = constraints.minWidth.coerceAtMost(narrowedMaxWidth),
+                                    maxWidth = narrowedMaxWidth
+                                )
+                            )
+                            val outerWidth = constraints.maxWidth.coerceAtLeast(placeable.width)
+                            layout(outerWidth, placeable.height) {
+                                placeable.placeRelative(
+                                    x = (outerWidth - placeable.width) / 2,
+                                    y = 0
+                                )
+                            }
+                        }
                         .graphicsLayer {
                             val p = collapseProgressState.value
-                            translationY = -filterRowHeightPx * p
-                            alpha = (1f - p * 1.6f).coerceIn(0f, 1f)
+                            val travel = (topRowHeightPx - extraTopGapPx).coerceAtLeast(0f)
+                            translationY = -travel * p
+                            shadowElevation = floatingShadowPx * p
+                            shape = CircleShape
+                            clip = false
+                            ambientShadowColor = ambientShadowTint
+                            spotShadowColor = spotShadowTint
                         }
-                        .padding(horizontal = horizPad, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clipToBounds()
+                        .onSizeChanged {
+                            if (it.height > 0) filterRowHeightPx = it.height
+                        }
                 ) {
-                    VaultFilter.entries.forEach { filter ->
-                        val filterCount = counts[filter]
-                        val chipLabel = if (filterCount != null && filter != VaultFilter.ALL) {
-                            "${filter.label} ($filterCount)"
-                        } else {
-                            filter.label
+                    LazyRow(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .graphicsLayer {
+                                val p = collapseProgressState.value
+                                translationY = -filterRowHeightPx * p
+                                alpha = (1f - p * 1.6f).coerceIn(0f, 1f)
+                            },
+                        contentPadding = PaddingValues(horizontal = horizPad, vertical = 10.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        lazyRowItems(
+                            items = VaultFilter.entries,
+                            key = { it.name }
+                        ) { filter ->
+                            val filterCount = counts[filter]
+                            val chipLabel = if (filterCount != null && filter != VaultFilter.ALL) {
+                                "${filter.label} ($filterCount)"
+                            } else {
+                                filter.label
+                            }
+                            VaultFilterChip(
+                                label = chipLabel,
+                                selected = selectedFilter == filter,
+                                interactive = !isCollapsed,
+                                onClick = { onSelectFilter(filter) }
+                            )
                         }
-                        VaultFilterChip(
-                            label = chipLabel,
-                            selected = selectedFilter == filter,
-                            interactive = !isCollapsed,
-                            onClick = { onSelectFilter(filter) },
-                            modifier = Modifier.weight(1f)
-                        )
                     }
                 }
             }
@@ -544,7 +595,7 @@ private fun VaultFilterChip(
                 shape = CircleShape
             )
             .then(clickModifier)
-            .padding(horizontal = 6.dp, vertical = 7.dp),
+            .padding(horizontal = 12.dp, vertical = 7.dp),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -563,11 +614,11 @@ private fun VaultFilterChip(
 private fun VaultWordCard(
     word: VocabularyWord,
     isWide: Boolean = false,
-    onSpeak: () -> Unit
+    onSpeak: () -> Unit,
+    onClick: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val sm2Colors = LocalSm2RatingColors.current
-    var expanded by remember(word.id) { mutableStateOf(false) }
 
     val isForgotten = remember(word.lastReviewedTimestamp, word.repetitions, word.easeFactor) {
         VocabularyVaultViewModel.isForgotten(word)
@@ -584,7 +635,7 @@ private fun VaultWordCard(
     }
 
     LiquidGlassCard(
-        onClick = { expanded = !expanded },
+        onClick = onClick,
         pressScaleEnabled = false,
         shape = VaultWordCardShape,
         modifier = Modifier.fillMaxWidth()
@@ -623,6 +674,14 @@ private fun VaultWordCard(
                             style = MaterialTheme.typography.labelMedium,
                             color = if (glassColors.isDark) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.primary
                         )
+                        if (word.isStarred) {
+                            Icon(
+                                imageVector = Icons.Rounded.Star,
+                                contentDescription = "Đã đánh dấu sao",
+                                tint = Color(0xFFF59E0B),
+                                modifier = Modifier.size(15.dp)
+                            )
+                        }
                     }
 
                     if (word.phonetic.isNotBlank()) {
@@ -686,52 +745,6 @@ private fun VaultWordCard(
                         fontWeight = FontWeight.SemiBold,
                         color = badgeFg
                     )
-                }
-            }
-
-            AnimatedVisibility(
-                visible = expanded,
-                enter = fadeIn(tween(180)) + expandVertically(tween(220)),
-                exit = fadeOut(tween(120)) + shrinkVertically(tween(180))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(ExamplePanelShape)
-                        .background(
-                            if (glassColors.isDark) Color.White.copy(alpha = 0.05f)
-                            else Color.White.copy(alpha = 0.50f)
-                        )
-                        .border(
-                            width = 0.6.dp,
-                            brush = glassColors.defaultBorderBrush,
-                            shape = ExamplePanelShape
-                        )
-                        .padding(12.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    if (word.exampleEn.isNotBlank()) {
-                        Text(
-                            text = word.exampleEn,
-                            style = MaterialTheme.typography.bodySmall,
-                            fontWeight = FontWeight.Medium,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        if (word.exampleVi.isNotBlank()) {
-                            Text(
-                                text = word.exampleVi,
-                                style = MaterialTheme.typography.bodySmall,
-                                fontStyle = FontStyle.Italic,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    } else {
-                        Text(
-                            text = "Chưa có câu ví dụ cho từ này.",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
             }
         }

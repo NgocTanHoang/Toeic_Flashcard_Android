@@ -13,6 +13,9 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -127,6 +130,12 @@ private val DockHideSpring = spring<Float>(
     stiffness = Spring.StiffnessMediumLow
 )
 
+internal fun computeDockHideOffsetPx(
+    dockHeightPx: Int,
+    navBarBottomPx: Float,
+    extraClearancePx: Float
+): Float = (dockHeightPx.toFloat() + navBarBottomPx + extraClearancePx).coerceAtLeast(extraClearancePx)
+
 /**
  * Floating pill-shaped Apple Liquid Glass bottom dock.
  * Auto-hide translation runs 100% on Draw-phase via [graphicsLayer] (0 recompositions),
@@ -142,9 +151,12 @@ fun LiquidGlassBottomDock(
 ) {
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
+    val density = LocalDensity.current
+    val navBarBottomPadding = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
+    val navBarBottomPx = with(density) { navBarBottomPadding.toPx() }
+    val extraClearancePx = with(density) { (12.dp + 24.dp).toPx() }
 
     var measuredHeightPx by remember { mutableIntStateOf(0) }
-    val extraSlidePx = with(LocalDensity.current) { 28.dp.toPx() }
     val hideProgressState = animateFloatAsState(
         targetValue = if (visible) 0f else 1f,
         animationSpec = DockHideSpring,
@@ -183,9 +195,13 @@ fun LiquidGlassBottomDock(
             .onSizeChanged { measuredHeightPx = it.height }
             .graphicsLayer {
                 val p = hideProgressState.value
-                val distance = (measuredHeightPx + extraSlidePx).coerceAtLeast(extraSlidePx)
+                val distance = computeDockHideOffsetPx(
+                    dockHeightPx = measuredHeightPx,
+                    navBarBottomPx = navBarBottomPx,
+                    extraClearancePx = extraClearancePx
+                )
                 translationY = p * distance
-                alpha = (1f - p * 0.35f).coerceIn(0f, 1f)
+                alpha = (1f - p * 1.15f).coerceIn(0f, 1f)
                 val scale = 1f - p * 0.04f
                 scaleX = scale
                 scaleY = scale

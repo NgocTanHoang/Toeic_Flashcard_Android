@@ -21,12 +21,15 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.items as lazyItems
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Bolt
 import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Headphones
 import androidx.compose.material.icons.rounded.Quiz
+import androidx.compose.material.icons.rounded.Refresh
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -40,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -49,8 +53,13 @@ import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
 import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
+import com.toeicflashcard.core.ui.glass.cardInnerPadding
+import com.toeicflashcard.core.ui.glass.gridItemSpacing
+import com.toeicflashcard.core.ui.glass.screenHorizontalPadding
 import com.toeicflashcard.core.ui.theme.LocalGlassOpacity
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
+import com.toeicflashcard.domain.model.TopicProgress
+import com.toeicflashcard.presentation.home.topicVisualFor
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
 import dev.chrisbanes.haze.HazeTint
@@ -65,16 +74,27 @@ fun PracticeScreen(
     headerHeightDp: Dp,
     listState: LazyListState,
     nestedScrollConnection: NestedScrollConnection,
+    selectedDeckName: String = "",
+    topics: List<TopicProgress> = emptyList(),
     onOpenStandardQuiz: () -> Unit,
-    onOpenListeningQuiz: () -> Unit
+    onOpenListeningQuiz: () -> Unit,
+    onQuickStartStandardQuiz: () -> Unit = onOpenStandardQuiz,
+    onQuickStartListeningQuiz: () -> Unit = onOpenListeningQuiz,
+    onStartTopicQuiz: (String) -> Unit = {},
+    onReviewHardWords: () -> Unit = {}
 ) {
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val isWide = maxWidth >= AdaptiveWideBreakpoint
+        val isTabletLandscape = maxWidth >= 900.dp
+        val basePad = if (isWide) screenHorizontalPadding(maxWidth) else 18.dp
         val sidePad = adaptiveHorizontalPadding(
             availableWidth = maxWidth,
             maxContentWidth = MainContentMaxWidth,
-            basePadding = 18.dp
+            basePadding = basePad
         )
+        val rowGap = if (isWide) gridItemSpacing(maxWidth) else 12.dp
+        val cardPad = if (isWide) 22.dp else 16.dp
+        val minModeHeight = if (isWide) 108.dp else 84.dp
 
         LazyColumn(
             state = listState,
@@ -87,13 +107,13 @@ fun PracticeScreen(
                 top = headerHeightDp + 12.dp,
                 bottom = 108.dp
             ),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             if (isWide) {
                 item(key = "__practice_row__", contentType = "practice_row_2col") {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        horizontalArrangement = Arrangement.spacedBy(rowGap)
                     ) {
                         Box(modifier = Modifier.weight(1f)) {
                             PracticeModeGlassCard(
@@ -101,6 +121,8 @@ fun PracticeScreen(
                                 title = "Trắc nghiệm nhanh",
                                 subtitle = "10 câu trắc nghiệm nghĩa ngẫu nhiên",
                                 accentColor = MaterialTheme.colorScheme.primary,
+                                innerPadding = cardPad,
+                                minHeight = minModeHeight,
                                 onClick = onOpenStandardQuiz
                             )
                         }
@@ -110,6 +132,8 @@ fun PracticeScreen(
                                 title = "Luyện nghe từ vựng",
                                 subtitle = "Nghe phát âm TTS và chọn nghĩa đúng",
                                 accentColor = MaterialTheme.colorScheme.secondary,
+                                innerPadding = cardPad,
+                                minHeight = minModeHeight,
                                 onClick = onOpenListeningQuiz
                             )
                         }
@@ -122,6 +146,7 @@ fun PracticeScreen(
                         title = "Trắc nghiệm nhanh",
                         subtitle = "10 câu trắc nghiệm nghĩa ngẫu nhiên",
                         accentColor = MaterialTheme.colorScheme.primary,
+                        minHeight = minModeHeight,
                         onClick = onOpenStandardQuiz
                     )
                 }
@@ -132,8 +157,136 @@ fun PracticeScreen(
                         title = "Luyện nghe từ vựng",
                         subtitle = "Nghe phát âm TTS và chọn nghĩa đúng",
                         accentColor = MaterialTheme.colorScheme.secondary,
+                        minHeight = minModeHeight,
                         onClick = onOpenListeningQuiz
                     )
+                }
+            }
+
+            if (selectedDeckName.isNotBlank()) {
+                item(key = "__quick_scope_section__", contentType = "quick_scope") {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Text(
+                            text = "Chọn nhanh phạm vi luyện tập",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+
+                        if (isWide) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(rowGap)
+                            ) {
+                                Box(modifier = Modifier.weight(1f)) {
+                                    PracticeModeGlassCard(
+                                        icon = Icons.Rounded.Bolt,
+                                        title = "Trắc nghiệm bộ hiện tại",
+                                        subtitle = "10 câu từ $selectedDeckName",
+                                        accentColor = MaterialTheme.colorScheme.primary,
+                                        innerPadding = 16.dp,
+                                        minHeight = 84.dp,
+                                        onClick = onQuickStartStandardQuiz
+                                    )
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    PracticeModeGlassCard(
+                                        icon = Icons.Rounded.Headphones,
+                                        title = "Luyện nghe bộ hiện tại",
+                                        subtitle = "Nghe TTS từ $selectedDeckName",
+                                        accentColor = MaterialTheme.colorScheme.secondary,
+                                        innerPadding = 16.dp,
+                                        minHeight = 84.dp,
+                                        onClick = onQuickStartListeningQuiz
+                                    )
+                                }
+                                Box(modifier = Modifier.weight(1f)) {
+                                    PracticeModeGlassCard(
+                                        icon = Icons.Rounded.Refresh,
+                                        title = "Ôn tập từ hay quên",
+                                        subtitle = "Luyện tập trung các từ dễ nhầm",
+                                        accentColor = MaterialTheme.colorScheme.tertiary,
+                                        innerPadding = 16.dp,
+                                        minHeight = 84.dp,
+                                        onClick = onReviewHardWords
+                                    )
+                                }
+                            }
+                        } else {
+                            PracticeModeGlassCard(
+                                icon = Icons.Rounded.Bolt,
+                                title = "Trắc nghiệm bộ hiện tại",
+                                subtitle = "10 câu từ $selectedDeckName",
+                                accentColor = MaterialTheme.colorScheme.primary,
+                                onClick = onQuickStartStandardQuiz
+                            )
+                            PracticeModeGlassCard(
+                                icon = Icons.Rounded.Refresh,
+                                title = "Ôn tập từ hay quên",
+                                subtitle = "Luyện tập trung các từ dễ nhầm",
+                                accentColor = MaterialTheme.colorScheme.tertiary,
+                                onClick = onReviewHardWords
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (isTabletLandscape && topics.isNotEmpty()) {
+                item(key = "__practice_topics_header__", contentType = "section_header") {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = "Luyện trắc nghiệm theo chủ đề",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "${topics.size} chủ đề",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                val topicRows = topics.chunked(3)
+                lazyItems(
+                    items = topicRows,
+                    key = { row -> row.joinToString("_") { it.topic } }
+                ) { rowTopics ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(rowGap)
+                    ) {
+                        rowTopics.forEach { tp ->
+                            val visual = remember(tp.topic) { topicVisualFor(tp.topic) }
+                            Box(modifier = Modifier.weight(1f)) {
+                                PracticeModeGlassCard(
+                                    icon = visual.icon,
+                                    title = tp.topic,
+                                    subtitle = "${tp.totalCount} từ • ${visual.subtitleVi}",
+                                    accentColor = MaterialTheme.colorScheme.primary,
+                                    innerPadding = 14.dp,
+                                    minHeight = 74.dp,
+                                    onClick = { onStartTopicQuiz(tp.topic) }
+                                )
+                            }
+                        }
+                        repeat(3 - rowTopics.size) {
+                            Spacer(modifier = Modifier.weight(1f))
+                        }
+                    }
                 }
             }
 
@@ -155,6 +308,12 @@ fun FloatingPracticeHeader(
 ) {
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val headerHorizPad = if (screenWidthDp >= AdaptiveWideBreakpoint) {
+        screenHorizontalPadding(screenWidthDp)
+    } else {
+        18.dp
+    }
     val headerTint = if (glassColors.isDark) {
         glassColors.hazeBackground.copy(alpha = glassOpacity)
     } else {
@@ -185,7 +344,7 @@ fun FloatingPracticeHeader(
                 .align(Alignment.CenterHorizontally)
                 .widthIn(max = MainContentMaxWidth)
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 12.dp),
+                .padding(horizontal = headerHorizPad, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -254,6 +413,8 @@ private fun PracticeModeGlassCard(
     title: String,
     subtitle: String,
     accentColor: Color,
+    innerPadding: Dp = 16.dp,
+    minHeight: Dp = 80.dp,
     onClick: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
@@ -269,12 +430,14 @@ private fun PracticeModeGlassCard(
         pressScaleEnabled = false,
         shape = PracticeActionCardShape,
         containerColor = glassColors.elevatedGlassFill,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = minHeight)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 16.dp),
+                .padding(horizontal = innerPadding, vertical = innerPadding),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(14.dp)
         ) {

@@ -30,11 +30,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.VolumeOff
+import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Celebration
+import androidx.compose.material.icons.rounded.LocalFireDepartment
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Speed
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -52,7 +58,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -74,11 +82,23 @@ import com.toeicflashcard.core.ui.glass.StudyContentMaxWidth
 import com.toeicflashcard.core.ui.glass.WideStudyContentMaxWidth
 import com.toeicflashcard.core.ui.glass.rememberLiquidGlassBorderBrush
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
+import com.toeicflashcard.domain.model.ReviewQuality
 import com.toeicflashcard.domain.model.VocabularyWord
+import com.toeicflashcard.domain.usecase.GetStudyQueueUseCase
 import com.toeicflashcard.presentation.study.components.Flashcard3D
 import com.toeicflashcard.presentation.study.components.Sm2RatingBar
 
 private val CompleteCardShape = RoundedCornerShape(30.dp)
+private val StatTileShape = RoundedCornerShape(18.dp)
+
+internal fun triggerStudyHapticIfEnabled(
+    enabled: Boolean,
+    performHaptic: () -> Unit
+) {
+    if (enabled) {
+        performHaptic()
+    }
+}
 
 private enum class StudyPhase {
     LOADING,
@@ -102,13 +122,35 @@ fun StudyScreen(
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
     val lifecycleOwner = LocalLifecycleOwner.current
+    val haptic = LocalHapticFeedback.current
     val glassColors = LocalLiquidGlassColors.current
     val windowMetrics = LocalAppWindowMetrics.current
     val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
     val isWideScreen = screenWidthDp >= AdaptiveWideBreakpoint || windowMetrics.widthDp >= AdaptiveWideBreakpoint
     val isLandscapeShort = windowMetrics.isLandscapeShort
+    val isTabletLandscape = (screenWidthDp >= 900.dp || windowMetrics.widthDp >= 900.dp) &&
+        (windowMetrics.widthDp > windowMetrics.heightDp)
+    val useTwoColumnStudy = isLandscapeShort || isTabletLandscape
     val studyMaxWidth = if (isWideScreen) WideStudyContentMaxWidth else StudyContentMaxWidth
-    val contentMaxWidth = if (isLandscapeShort) MainContentMaxWidth else studyMaxWidth
+    val contentMaxWidth = if (useTwoColumnStudy) MainContentMaxWidth else studyMaxWidth
+
+    val onFlipWithHaptic = remember(viewModel, state.enableHapticFeedback, haptic) {
+        {
+            triggerStudyHapticIfEnabled(state.enableHapticFeedback) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+            viewModel.flipCard()
+        }
+    }
+
+    val onSubmitRatingWithHaptic: (ReviewQuality) -> Unit = remember(viewModel, state.enableHapticFeedback, haptic) {
+        { quality ->
+            triggerStudyHapticIfEnabled(state.enableHapticFeedback) {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+            }
+            viewModel.submitRating(quality)
+        }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.ttsMessages.collect { message ->
@@ -116,16 +158,22 @@ fun StudyScreen(
         }
     }
 
+    LaunchedEffect(state.cardInstanceKey, state.isLoading, state.isSessionComplete, state.autoPlayTts) {
+        viewModel.maybeAutoPlayCurrentCard()
+    }
+
     DisposableEffect(lifecycleOwner, viewModel) {
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) {
-                viewModel.stopSpeaking()
+            when (event) {
+                Lifecycle.Event.ON_RESUME -> viewModel.setScreenActive(true)
+                Lifecycle.Event.ON_STOP -> viewModel.setScreenActive(false)
+                else -> Unit
             }
         }
         lifecycleOwner.lifecycle.addObserver(observer)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
-            viewModel.stopSpeaking()
+            viewModel.setScreenActive(false)
         }
     }
 
@@ -147,17 +195,20 @@ fun StudyScreen(
             StudyTopBar(
                 title = state.title,
                 speechRate = state.speechRate,
+                autoPlayTts = state.autoPlayTts,
                 completedCount = state.completedUniqueCount,
                 totalCount = state.totalInitialCount,
                 remainingCount = state.queue.size,
                 isPracticeMode = state.isPracticeMode,
                 showCounter = !state.isLoading && !state.isSessionComplete,
                 maxWidth = contentMaxWidth,
+                isWideScreen = isWideScreen,
                 onBack = {
                     viewModel.stopSpeaking()
                     onNavigateBack()
                 },
-                onToggleSpeechRate = viewModel::toggleSpeechRate
+                onToggleSpeechRate = viewModel::toggleSpeechRate,
+                onToggleAutoPlayTts = viewModel::toggleAutoPlayTts
             )
 
             AnimatedContent(
@@ -184,15 +235,16 @@ fun StudyScreen(
                     }
 
                     StudyPhase.COMPLETE -> {
-                        SessionCompleteContent(
-                            totalWords = state.totalInitialCount,
-                            requeuedCount = state.requeuedCount,
-                            isPracticeMode = state.isPracticeMode,
+                        SessionSummaryCard(
+                            summary = state.sessionSummary,
+                            totalInitialWords = state.totalInitialCount,
+                            remainingNewWordsInDeck = state.remainingNewWordsInDeck,
                             maxWidth = studyMaxWidth,
+                            onContinueNewWords = viewModel::startNextNewWordsSession,
                             onBackHome = onNavigateBack,
                             modifier = Modifier
                                 .fillMaxSize()
-                                .padding(22.dp)
+                                .padding(horizontal = 20.dp, vertical = 16.dp)
                         )
                     }
 
@@ -224,14 +276,14 @@ fun StudyScreen(
                                     )
                                 }
 
-                                if (isLandscapeShort) {
+                                if (useTwoColumnStudy) {
                                     Row(
                                         modifier = Modifier
                                             .widthIn(max = MainContentMaxWidth)
                                             .fillMaxWidth()
                                             .weight(1f)
-                                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                                        horizontalArrangement = Arrangement.spacedBy(18.dp),
+                                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(22.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         AnimatedContent(
@@ -273,7 +325,7 @@ fun StudyScreen(
                                             },
                                             label = "card_transition_landscape",
                                             modifier = Modifier
-                                                .weight(1.5f)
+                                                .weight(0.68f)
                                                 .fillMaxHeight()
                                         ) { slot ->
                                             val flipLatch = remember(slot.key) { FlipStateLatch(false) }
@@ -283,16 +335,17 @@ fun StudyScreen(
                                             Flashcard3D(
                                                 word = slot.word,
                                                 isFlipped = flipLatch.flipped,
-                                                onFlip = viewModel::flipCard,
+                                                onFlip = onFlipWithHaptic,
                                                 onSpeakWord = viewModel::speakWord,
                                                 onSpeakExample = viewModel::speakExample,
+                                                isTabletLandscape = isTabletLandscape,
                                                 modifier = Modifier.fillMaxSize()
                                             )
                                         }
 
                                         Box(
                                             modifier = Modifier
-                                                .weight(1f)
+                                                .weight(0.32f)
                                                 .fillMaxHeight(),
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -308,8 +361,9 @@ fun StudyScreen(
                                                     Sm2RatingBar(
                                                         visible = true,
                                                         intervalPreviews = state.intervalPreviews,
-                                                        onSelectQuality = viewModel::submitRating,
-                                                        isVertical = true
+                                                        onSelectQuality = onSubmitRatingWithHaptic,
+                                                        isVertical = true,
+                                                        isLargeVertical = isTabletLandscape
                                                     )
                                                 } else {
                                                     Text(
@@ -381,7 +435,7 @@ fun StudyScreen(
                                             Flashcard3D(
                                                 word = slot.word,
                                                 isFlipped = flipLatch.flipped,
-                                                onFlip = viewModel::flipCard,
+                                                onFlip = onFlipWithHaptic,
                                                 onSpeakWord = viewModel::speakWord,
                                                 onSpeakExample = viewModel::speakExample,
                                                 modifier = Modifier.fillMaxSize()
@@ -392,7 +446,7 @@ fun StudyScreen(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = 18.dp)
+                                            .padding(horizontal = if (isWideScreen) 0.dp else 18.dp)
                                             .padding(bottom = 14.dp)
                                             .heightIn(min = 76.dp),
                                         contentAlignment = Alignment.Center
@@ -400,7 +454,8 @@ fun StudyScreen(
                                         Box(
                                             modifier = Modifier
                                                 .widthIn(max = studyMaxWidth)
-                                                .fillMaxWidth(),
+                                                .fillMaxWidth()
+                                                .padding(horizontal = if (isWideScreen) 20.dp else 0.dp),
                                             contentAlignment = Alignment.Center
                                         ) {
                                             AnimatedContent(
@@ -421,7 +476,7 @@ fun StudyScreen(
                                                     Sm2RatingBar(
                                                         visible = true,
                                                         intervalPreviews = state.intervalPreviews,
-                                                        onSelectQuality = viewModel::submitRating
+                                                        onSelectQuality = onSubmitRatingWithHaptic
                                                     )
                                                 } else {
                                                     Text(
@@ -468,14 +523,17 @@ fun StudyScreen(
 private fun StudyTopBar(
     title: String,
     speechRate: Float,
+    autoPlayTts: Boolean,
     completedCount: Int,
     totalCount: Int,
     remainingCount: Int,
     isPracticeMode: Boolean,
     showCounter: Boolean,
     maxWidth: Dp = StudyContentMaxWidth,
+    isWideScreen: Boolean = false,
     onBack: () -> Unit,
-    onToggleSpeechRate: () -> Unit
+    onToggleSpeechRate: () -> Unit,
+    onToggleAutoPlayTts: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val rateLabel = if (speechRate > 0.85f) "1.0x" else "0.75x"
@@ -489,7 +547,7 @@ private fun StudyTopBar(
             modifier = Modifier
                 .widthIn(max = maxWidth)
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 10.dp),
+                .padding(horizontal = if (isWideScreen) 20.dp else 18.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
@@ -531,51 +589,100 @@ private fun StudyTopBar(
             }
         }
 
-        val speedTint = when {
-            glassColors.isDark -> Color.White.copy(alpha = if (isSlow) 0.16f else 0.08f)
-            isSlow -> MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
-            else -> MaterialTheme.colorScheme.surface.copy(alpha = 0.56f)
-        }
-        val speedContent = when {
-            glassColors.isDark && isSlow -> MaterialTheme.colorScheme.primary
-            glassColors.isDark -> MaterialTheme.colorScheme.onSurface
-            isSlow -> MaterialTheme.colorScheme.onPrimaryContainer
-            else -> MaterialTheme.colorScheme.onSurface
-        }
-        LiquidGlassButton(
-            onClick = onToggleSpeechRate,
-            tintColor = speedTint,
-            contentColor = speedContent,
-            borderColor = if (!glassColors.isDark && isSlow) MaterialTheme.colorScheme.primary else null,
-            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
-            modifier = Modifier.heightIn(min = 38.dp)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = Icons.Rounded.Speed,
-                contentDescription = "Tốc độ đọc",
-                modifier = Modifier.size(16.dp)
-            )
-            Spacer(modifier = Modifier.width(5.dp))
-            Text(
-                text = rateLabel,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold
-            )
+            val autoPlayTint = when {
+                glassColors.isDark && autoPlayTts -> MaterialTheme.colorScheme.primary.copy(alpha = 0.18f)
+                glassColors.isDark -> Color.White.copy(alpha = 0.08f)
+                autoPlayTts -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
+                else -> MaterialTheme.colorScheme.surface.copy(alpha = 0.56f)
+            }
+            val autoPlayContent = when {
+                autoPlayTts -> MaterialTheme.colorScheme.primary
+                else -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+            LiquidGlassIconButton(
+                onClick = onToggleAutoPlayTts,
+                size = 38.dp,
+                containerColor = autoPlayTint,
+                contentColor = autoPlayContent
+            ) {
+                Icon(
+                    imageVector = if (autoPlayTts) {
+                        Icons.AutoMirrored.Rounded.VolumeUp
+                    } else {
+                        Icons.AutoMirrored.Rounded.VolumeOff
+                    },
+                    contentDescription = if (autoPlayTts) {
+                        "Tắt tự động phát âm"
+                    } else {
+                        "Bật tự động phát âm"
+                    },
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            val speedTint = when {
+                glassColors.isDark -> Color.White.copy(alpha = if (isSlow) 0.16f else 0.08f)
+                isSlow -> MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                else -> MaterialTheme.colorScheme.surface.copy(alpha = 0.56f)
+            }
+            val speedContent = when {
+                glassColors.isDark && isSlow -> MaterialTheme.colorScheme.primary
+                glassColors.isDark -> MaterialTheme.colorScheme.onSurface
+                isSlow -> MaterialTheme.colorScheme.onPrimaryContainer
+                else -> MaterialTheme.colorScheme.onSurface
+            }
+            LiquidGlassButton(
+                onClick = onToggleSpeechRate,
+                tintColor = speedTint,
+                contentColor = speedContent,
+                borderColor = if (!glassColors.isDark && isSlow) MaterialTheme.colorScheme.primary else null,
+                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+                modifier = Modifier.heightIn(min = 38.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Rounded.Speed,
+                    contentDescription = "Tốc độ đọc",
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(5.dp))
+                Text(
+                    text = rateLabel,
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
     }
     }
 }
 
 @Composable
-private fun SessionCompleteContent(
-    totalWords: Int,
-    requeuedCount: Int,
-    isPracticeMode: Boolean,
+private fun SessionSummaryCard(
+    summary: SessionSummaryStats,
+    totalInitialWords: Int,
+    remainingNewWordsInDeck: Int,
     maxWidth: Dp = StudyContentMaxWidth,
+    onContinueNewWords: () -> Unit,
     onBackHome: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    val nextBatchCount = minOf(remainingNewWordsInDeck, GetStudyQueueUseCase.DEFAULT_DAILY_SESSION_LIMIT)
+    val streakBg = if (glassColors.isDark) {
+        Color.White.copy(alpha = 0.08f)
+    } else {
+        Color.White.copy(alpha = 0.68f)
+    }
+    val statTileBg = if (glassColors.isDark) {
+        Color.White.copy(alpha = 0.055f)
+    } else {
+        Color.White.copy(alpha = 0.56f)
+    }
+
     Box(
         modifier = modifier,
         contentAlignment = Alignment.Center
@@ -590,96 +697,250 @@ private fun SessionCompleteContent(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(28.dp),
+                    .verticalScroll(rememberScrollState())
+                    .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(72.dp)
-                        .clip(CircleShape)
-                        .background(
-                            if (glassColors.isDark) {
-                                Color.White.copy(alpha = 0.08f)
-                            } else {
-                                MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f)
-                            }
-                        )
-                        .border(
-                            width = if (glassColors.isDark) 0.75.dp else 1.dp,
-                            brush = rememberLiquidGlassBorderBrush(
-                                glassColors = glassColors,
-                                accentColor = if (glassColors.isDark) null else MaterialTheme.colorScheme.secondary
-                            ),
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Rounded.Celebration,
-                        contentDescription = null,
-                        tint = if (glassColors.isDark) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
-                        modifier = Modifier.size(36.dp)
+                    Box(
+                        modifier = Modifier
+                            .size(52.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (glassColors.isDark) {
+                                    Color.White.copy(alpha = 0.08f)
+                                } else {
+                                    MaterialTheme.colorScheme.secondary.copy(alpha = 0.16f)
+                                }
+                            )
+                            .border(
+                                width = if (glassColors.isDark) 0.75.dp else 1.dp,
+                                brush = rememberLiquidGlassBorderBrush(
+                                    glassColors = glassColors,
+                                    accentColor = if (glassColors.isDark) null else MaterialTheme.colorScheme.secondary
+                                ),
+                                shape = CircleShape
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.Celebration,
+                            contentDescription = null,
+                            tint = if (glassColors.isDark) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary,
+                            modifier = Modifier.size(26.dp)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .background(streakBg)
+                            .border(
+                                width = if (glassColors.isDark) 0.75.dp else 1.dp,
+                                brush = glassColors.defaultBorderBrush,
+                                shape = CircleShape
+                            )
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(5.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.LocalFireDepartment,
+                            contentDescription = null,
+                            tint = if (summary.currentStreak > 0) {
+                                MaterialTheme.colorScheme.tertiary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Streak ${summary.currentStreak} ngày",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.SemiBold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = if (totalInitialWords == 0 && summary.totalEvaluatedCount == 0) {
+                            "Không có từ cần ôn ngay lúc này"
+                        } else {
+                            "Tổng kết phiên học"
+                        },
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Tỷ lệ nhớ: ${summary.recallRatePercent}%",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
 
-                Text(
-                    text = if (totalWords == 0) {
-                        "Không có từ cần ôn ngay lúc này"
-                    } else {
-                        "Hoàn thành phiên ôn tập!"
-                    },
-                    style = MaterialTheme.typography.headlineMedium,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                val summaryMessage = when {
-                    totalWords == 0 ->
-                        "Tất cả từ vựng đều đã được lên lịch ôn lại trong các ngày tới."
-                    requeuedCount > 0 ->
-                        "Bạn đã hoàn thành $totalWords từ vựng, bao gồm $requeuedCount từ cần ôn lại kỹ hơn."
-                    isPracticeMode ->
-                        "Bạn đã luyện tập xong $totalWords từ trong chủ đề này và cập nhật lịch SM-2."
-                    else ->
-                        "Bạn đã ghi nhớ tốt toàn bộ $totalWords từ đến hạn hôm nay."
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        SummaryStatTile(
+                            label = "Từ mới đã học",
+                            value = "${summary.newWordsStudied}",
+                            containerColor = statTileBg,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SummaryStatTile(
+                            label = "Từ ôn tập",
+                            value = "${summary.reviewedWordsCount}",
+                            containerColor = statTileBg,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        SummaryStatTile(
+                            label = "Tổng số từ đã ôn",
+                            value = "${summary.totalEvaluatedCount}",
+                            containerColor = statTileBg,
+                            modifier = Modifier.weight(1f)
+                        )
+                        SummaryStatTile(
+                            label = "Số từ nhớ ngay",
+                            value = "${summary.rememberedImmediatelyCount}",
+                            containerColor = statTileBg,
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
                 }
 
-                Text(
-                    text = summaryMessage,
-                    style = MaterialTheme.typography.bodyLarge,
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Spacer(modifier = Modifier.height(6.dp))
+                if (nextBatchCount > 0) {
+                    LiquidGlassButton(
+                        onClick = onContinueNewWords,
+                        tintColor = if (glassColors.isDark) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                        },
+                        contentColor = if (glassColors.isDark) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onPrimaryContainer
+                        },
+                        borderColor = if (glassColors.isDark) {
+                            MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
+                        } else {
+                            MaterialTheme.colorScheme.primary
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Rounded.PlayArrow,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(6.dp))
+                        Text(
+                            text = "Học tiếp $nextBatchCount từ mới",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(StatTileShape)
+                            .background(statTileBg)
+                            .border(
+                                width = if (glassColors.isDark) 0.75.dp else 1.dp,
+                                brush = glassColors.defaultBorderBrush,
+                                shape = StatTileShape
+                            )
+                            .padding(horizontal = 16.dp, vertical = 12.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = "Bạn đã hoàn thành tất cả từ mới trong bộ này",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                            color = MaterialTheme.colorScheme.secondary
+                        )
+                    }
+                }
 
                 LiquidGlassButton(
                     onClick = onBackHome,
                     tintColor = if (glassColors.isDark) {
-                        MaterialTheme.colorScheme.primary
+                        Color.White.copy(alpha = 0.08f)
                     } else {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.22f)
+                        Color.White.copy(alpha = 0.65f)
                     },
-                    contentColor = if (glassColors.isDark) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onPrimaryContainer
-                    },
-                    borderColor = if (glassColors.isDark) {
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.28f)
-                    } else {
-                        MaterialTheme.colorScheme.primary
-                    },
+                    contentColor = MaterialTheme.colorScheme.onSurface,
+                    borderColor = null,
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
-                        text = "Về trang chủ",
+                        text = "Về Trang chủ",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun SummaryStatTile(
+    label: String,
+    value: String,
+    containerColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val glassColors = LocalLiquidGlassColors.current
+    Column(
+        modifier = modifier
+            .clip(StatTileShape)
+            .background(containerColor)
+            .border(
+                width = if (glassColors.isDark) 0.75.dp else 1.dp,
+                brush = glassColors.defaultBorderBrush,
+                shape = StatTileShape
+            )
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }

@@ -71,6 +71,9 @@ class HomeViewModel(
         }
         HomeUiState(
             isLoading = !summary.hasAnyDatabaseWords,
+            preferencesLoaded = true,
+            hasCompletedOnboarding = prefs.hasCompletedOnboarding,
+            targetToeicLevel = prefs.targetToeicLevel,
             hasDatabaseWords = summary.hasAnyDatabaseWords,
             selectedDeckId = summary.selectedDeckId,
             selectedDeckName = VocabularyDecks.displayNameFor(summary.selectedDeckId),
@@ -93,7 +96,8 @@ class HomeViewModel(
             reminderEnabled = prefs.reminderEnabled,
             reminderHour = prefs.reminderHour,
             reminderMinute = prefs.reminderMinute,
-            glassOpacity = prefs.glassOpacity
+            glassOpacity = prefs.glassOpacity,
+            enableHapticFeedback = prefs.enableHapticFeedback
         )
     }
         .flowOn(defaultDispatcher)
@@ -191,6 +195,30 @@ class HomeViewModel(
         }
         viewModelScope.launch {
             userPreferencesRepository.setSpeechRate(nextRate)
+        }
+    }
+
+    fun setEnableHapticFeedback(enabled: Boolean) {
+        viewModelScope.launch {
+            userPreferencesRepository.setEnableHapticFeedback(enabled)
+        }
+    }
+
+    fun completeOnboarding(dailyGoal: Int, targetToeicLevel: String) {
+        viewModelScope.launch {
+            userPreferencesRepository.completeOnboarding(
+                dailyGoal = dailyGoal,
+                targetToeicLevel = targetToeicLevel
+            )
+        }
+    }
+
+    fun skipOnboarding() {
+        viewModelScope.launch {
+            userPreferencesRepository.completeOnboarding(
+                dailyGoal = null,
+                targetToeicLevel = null
+            )
         }
     }
 

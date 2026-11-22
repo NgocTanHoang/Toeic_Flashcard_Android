@@ -15,7 +15,7 @@ import kotlinx.coroutines.launch
 
 @Database(
     entities = [VocabularyEntity::class],
-    version = 3,
+    version = 4,
     exportSchema = false
 )
 abstract class ToeicDatabase : RoomDatabase() {
@@ -53,6 +53,14 @@ abstract class ToeicDatabase : RoomDatabase() {
             }
         }
 
+        val MIGRATION_3_4 = object : Migration(3, 4) {
+            override fun migrate(db: SupportSQLiteDatabase) {
+                db.execSQL(
+                    "ALTER TABLE `vocabulary_words` ADD COLUMN `isStarred` INTEGER NOT NULL DEFAULT 0"
+                )
+            }
+        }
+
         @Volatile
         private var instance: ToeicDatabase? = null
 
@@ -74,7 +82,7 @@ abstract class ToeicDatabase : RoomDatabase() {
                 ToeicDatabase::class.java,
                 DATABASE_NAME
             )
-                .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                 .addCallback(object : Callback() {
                     override fun onCreate(db: SupportSQLiteDatabase) {
                         super.onCreate(db)

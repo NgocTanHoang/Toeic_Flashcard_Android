@@ -78,8 +78,8 @@ class DarkTonePreferencesTest {
     }
 
     @Test
-    fun `selectedDeckId defaults to ALL, persists selectable decks, and falls back safely`() = withRepository { dataStore, repo ->
-        assertEquals(VocabularyDecks.ALL_ID, repo.userPreferences.first().selectedDeckId)
+    fun `selectedDeckId defaults to ESSENTIAL_600, persists selectable decks, and falls back safely`() = withRepository { dataStore, repo ->
+        assertEquals(VocabularyDecks.DEFAULT_SELECTED_DECK_ID, repo.userPreferences.first().selectedDeckId)
 
         for (deckId in VocabularyDecks.orderedSelectableIds) {
             repo.setSelectedDeckId(deckId)
@@ -87,9 +87,23 @@ class DarkTonePreferencesTest {
         }
 
         repo.setSelectedDeckId("unknown_deck_id")
-        assertEquals(VocabularyDecks.ALL_ID, repo.userPreferences.first().selectedDeckId)
+        assertEquals(VocabularyDecks.DEFAULT_SELECTED_DECK_ID, repo.userPreferences.first().selectedDeckId)
 
-        dataStore.edit { prefs -> prefs[stringPreferencesKey("selected_deck_id")] = "stale_deck" }
-        assertEquals(VocabularyDecks.ALL_ID, repo.userPreferences.first().selectedDeckId)
+        dataStore.edit { prefs -> prefs[stringPreferencesKey("selected_deck_id_v2")] = "stale_deck" }
+        assertEquals(VocabularyDecks.DEFAULT_SELECTED_DECK_ID, repo.userPreferences.first().selectedDeckId)
+    }
+
+    @Test
+    fun `autoPlayTts defaults to true and enableHapticFeedback defaults to false and both persist`() = withRepository { _, repo ->
+        val initial = repo.userPreferences.first()
+        assertEquals(true, initial.autoPlayTts)
+        assertEquals(false, initial.enableHapticFeedback)
+
+        repo.setAutoPlayTts(false)
+        repo.setEnableHapticFeedback(true)
+
+        val updated = repo.userPreferences.first()
+        assertEquals(false, updated.autoPlayTts)
+        assertEquals(true, updated.enableHapticFeedback)
     }
 }

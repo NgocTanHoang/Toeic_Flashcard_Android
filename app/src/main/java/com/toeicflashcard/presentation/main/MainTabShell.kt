@@ -46,6 +46,7 @@ import com.toeicflashcard.presentation.home.HomeScreen
 import com.toeicflashcard.presentation.home.HomeViewModel
 import com.toeicflashcard.presentation.home.components.AddVocabularySheet
 import com.toeicflashcard.presentation.home.components.DeckSwitcherSheet
+import com.toeicflashcard.presentation.home.components.OnboardingSheet
 import com.toeicflashcard.presentation.home.components.QuizScopeDialog
 import com.toeicflashcard.presentation.home.components.ReminderSettingsSheet
 import com.toeicflashcard.presentation.practice.FloatingPracticeHeader
@@ -56,6 +57,7 @@ import com.toeicflashcard.presentation.stats.StatsViewModel
 import com.toeicflashcard.presentation.vault.FloatingVaultHeader
 import com.toeicflashcard.presentation.vault.VocabularyVaultScreen
 import com.toeicflashcard.presentation.vault.VocabularyVaultViewModel
+import com.toeicflashcard.presentation.vault.WordDetailSheet
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.haze
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -71,6 +73,7 @@ private enum class QuizScopeLaunchMode {
 fun MainTabShell(
     homeViewModel: HomeViewModel,
     onStartDueReview: () -> Unit,
+    onOpenDeckTopics: (String) -> Unit,
     onSelectTopic: (String) -> Unit,
     onReviewHardWords: () -> Unit,
     onStartQuiz: (topic: String?, listeningMode: Boolean) -> Unit
@@ -88,6 +91,13 @@ fun MainTabShell(
     var showAddVocabSheet by remember { mutableStateOf(false) }
     var showDeckSwitcher by remember { mutableStateOf(false) }
     var quizScopeMode by remember { mutableStateOf<QuizScopeLaunchMode?>(null) }
+    var selectedDetailWordId by rememberSaveable { mutableStateOf<Int?>(null) }
+
+    val selectedDetailWord = remember(selectedDetailWordId, vaultState.allScopedWords) {
+        selectedDetailWordId?.let { id ->
+            vaultState.allScopedWords.firstOrNull { it.id == id }
+        }
+    }
 
     var homeHeaderHeightPx by rememberSaveable { mutableIntStateOf(0) }
     var vaultHeaderHeightPx by rememberSaveable { mutableIntStateOf(0) }
@@ -95,7 +105,7 @@ fun MainTabShell(
     var statsHeaderHeightPx by rememberSaveable { mutableIntStateOf(0) }
 
     val density = LocalDensity.current
-    val homeHeaderHeightDp = with(density) { if (homeHeaderHeightPx > 0) homeHeaderHeightPx.toDp() else 148.dp }
+    val homeHeaderHeightDp = with(density) { if (homeHeaderHeightPx > 0) homeHeaderHeightPx.toDp() else 92.dp }
     val vaultHeaderHeightDp = with(density) { if (vaultHeaderHeightPx > 0) vaultHeaderHeightPx.toDp() else 196.dp }
     val practiceHeaderHeightDp = with(density) { if (practiceHeaderHeightPx > 0) practiceHeaderHeightPx.toDp() else 92.dp }
     val statsHeaderHeightDp = with(density) { if (statsHeaderHeightPx > 0) statsHeaderHeightPx.toDp() else 92.dp }
@@ -133,7 +143,9 @@ fun MainTabShell(
             }
     }
 
-    val isOverlayOpen = showReminderSheet || showAddVocabSheet || showDeckSwitcher || quizScopeMode != null
+    val showOnboarding = homeState.preferencesLoaded && !homeState.hasCompletedOnboarding
+    val isOverlayOpen = showReminderSheet || showAddVocabSheet || showDeckSwitcher ||
+        quizScopeMode != null || selectedDetailWord != null || showOnboarding
 
     Box(modifier = Modifier.fillMaxSize()) {
         // Layer 1: Single Haze source containing AmbientMeshBackground + scrollable tab lists
@@ -160,11 +172,14 @@ fun MainTabShell(
                             headerHeightDp = homeHeaderHeightDp,
                             gridState = homeGridState,
                             nestedScrollConnection = collapsibleHeaderState.nestedScrollConnection,
+                            onSelectDeck = homeViewModel::selectDeck,
+                            onOpenDeckTopics = { deckId ->
+                                homeViewModel.selectDeck(deckId)
+                                onOpenDeckTopics(deckId)
+                            },
                             onSelectDailyGoal = homeViewModel::updateDailyGoal,
                             onStartDueReview = onStartDueReview,
-                            onSelectTopic = onSelectTopic,
-                            onOpenStandardQuiz = { quizScopeMode = QuizScopeLaunchMode.STANDARD },
-                            onOpenListeningQuiz = { quizScopeMode = QuizScopeLaunchMode.LISTENING }
+                            onSelectTopic = onSelectTopic
                         )
                     }
 
@@ -176,6 +191,7 @@ fun MainTabShell(
                             headerHeightDp = vaultHeaderHeightDp,
                             gridState = vaultGridState,
                             nestedScrollConnection = collapsibleHeaderState.nestedScrollConnection,
+                            onSelectWord = { word -> selectedDetailWordId = word.id },
                             onShowMessage = { msg ->
                                 coroutineScope.launch {
                                     snackbarHostState.showSnackbar(msg)
@@ -189,8 +205,14 @@ fun MainTabShell(
                             headerHeightDp = practiceHeaderHeightDp,
                             listState = practiceListState,
                             nestedScrollConnection = dockScrollController.nestedScrollConnection,
+                            selectedDeckName = homeState.selectedDeckName,
+                            topics = homeState.topics,
                             onOpenStandardQuiz = { quizScopeMode = QuizScopeLaunchMode.STANDARD },
-                            onOpenListeningQuiz = { quizScopeMode = QuizScopeLaunchMode.LISTENING }
+                            onOpenListeningQuiz = { quizScopeMode = QuizScopeLaunchMode.LISTENING },
+                            onQuickStartStandardQuiz = { onStartQuiz(null, false) },
+                            onQuickStartListeningQuiz = { onStartQuiz(null, true) },
+                            onStartTopicQuiz = { topic -> onStartQuiz(topic, false) },
+                            onReviewHardWords = onReviewHardWords
                         )
                     }
 
@@ -227,8 +249,6 @@ fun MainTabShell(
             when (tab) {
                 MainDockTab.HOME -> {
                     FloatingGlassHomeHeader(
-                        selectedDeckName = homeState.selectedDeckName,
-                        totalCount = homeState.totalCount,
                         topicCount = homeState.topics.size,
                         topicQuery = homeQuery,
                         isCollapsed = collapsibleHeaderState.isCollapsed,
@@ -236,9 +256,7 @@ fun MainTabShell(
                             homeQuery = next
                             homeViewModel.updateSearchQuery(next)
                         },
-                        onOpenDeckSwitcher = { showDeckSwitcher = true },
                         onOpenReminderSettings = { showReminderSheet = true },
-                        onToggleLightDark = homeViewModel::toggleLightDark,
                         contentHazeState = contentHazeState,
                         modifier = Modifier
                             .fillMaxWidth()
@@ -296,24 +314,25 @@ fun MainTabShell(
         }
 
         // Layer 2b: Floating Liquid Glass Bottom Dock centered at bottom across all viewports
+        val isDockVisible = dockScrollController.isVisible && !isOverlayOpen
         LiquidGlassBottomDock(
             selectedTab = selectedTab,
             onSelectTab = { nextTab ->
                 selectedTab = nextTab
                 collapsibleHeaderState.expand()
             },
-            visible = dockScrollController.isVisible && !isOverlayOpen,
+            visible = isDockVisible,
             hazeState = contentHazeState,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
 
-        // Layer 3: Frosted Glass Snackbar elevated above Dock
+        // Layer 3: Frosted Glass Snackbar elevated cleanly above Bottom Dock
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .navigationBarsPadding()
-                .padding(start = 18.dp, end = 18.dp, bottom = 94.dp)
+                .padding(start = 18.dp, end = 18.dp, bottom = if (isDockVisible) 112.dp else 20.dp)
         ) { data ->
             LiquidGlassCard(
                 hazeState = contentHazeState,
@@ -339,6 +358,7 @@ fun MainTabShell(
             reminderEnabled = homeState.reminderEnabled,
             reminderHour = homeState.reminderHour,
             reminderMinute = homeState.reminderMinute,
+            enableHapticFeedback = homeState.enableHapticFeedback,
             onSelectThemeMode = homeViewModel::setThemeMode,
             onSelectDarkTone = { tone ->
                 homeViewModel.selectDarkTone(tone = tone, currentlyDark = glassColors.isDark)
@@ -346,6 +366,7 @@ fun MainTabShell(
             onPreviewGlassOpacity = homeViewModel::previewGlassOpacity,
             onCommitGlassOpacity = homeViewModel::updateGlassOpacity,
             onResetGlassOpacity = homeViewModel::resetGlassOpacity,
+            onSetHapticFeedback = homeViewModel::setEnableHapticFeedback,
             onDismiss = { showReminderSheet = false },
             onSaveReminderSettings = { enabled, hour, minute ->
                 val wasEnabled = homeState.reminderEnabled
@@ -414,5 +435,38 @@ fun MainTabShell(
             },
             onDismiss = { showDeckSwitcher = false }
         )
+
+        // Layer 8: In-window Word Detail, Edit & Delete Sheet
+        WordDetailSheet(
+            word = selectedDetailWord,
+            hazeState = contentHazeState,
+            onSpeakAtRate = vaultViewModel::speakWordAtRate,
+            onToggleStarred = vaultViewModel::toggleStarred,
+            onResetProgress = vaultViewModel::resetWordProgress,
+            onUpdateCustomWord = vaultViewModel::updateCustomWord,
+            onDeleteCustomWord = vaultViewModel::deleteCustomWord,
+            onShowMessage = { msg ->
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar(msg)
+                }
+            },
+            onDismiss = { selectedDetailWordId = null }
+        )
+
+        // Layer 9: Optional 1-Step Onboarding Sheet
+        OnboardingSheet(
+            visible = showOnboarding,
+            hazeState = contentHazeState,
+            initialDailyGoal = homeState.dailyGoal,
+            initialTargetLevel = homeState.targetToeicLevel,
+            onStartLearning = { goal, target ->
+                homeViewModel.completeOnboarding(goal, target)
+                coroutineScope.launch {
+                    snackbarHostState.showSnackbar("Đã lưu mục tiêu $target • $goal từ/ngày")
+                }
+            },
+            onSkip = homeViewModel::skipOnboarding
+        )
+
     }
 }

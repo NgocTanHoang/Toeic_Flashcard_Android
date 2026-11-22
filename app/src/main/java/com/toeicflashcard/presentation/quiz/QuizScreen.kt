@@ -222,6 +222,7 @@ fun QuizScreen(
                                 selectedOptionIndex = state.selectedOptionIndex,
                                 hasAnsweredCurrent = state.hasAnsweredCurrent,
                                 isListeningMode = state.isListeningMode,
+                                isWideScreen = isWideScreen,
                                 isLandscapeShort = isLandscapeShort,
                                 containerMaxWidth = contentMaxWidth,
                                 onSpeakWord = viewModel::speakCurrentWord,
@@ -349,6 +350,7 @@ private fun QuizQuestionContent(
     selectedOptionIndex: Int?,
     hasAnsweredCurrent: Boolean,
     isListeningMode: Boolean,
+    isWideScreen: Boolean,
     isLandscapeShort: Boolean,
     containerMaxWidth: Dp,
     onSpeakWord: () -> Unit,
@@ -520,9 +522,10 @@ private fun QuizQuestionContent(
                     }
                 }
             } else {
+                val widePortrait = isWideScreen && !isLandscapeShort
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(14.dp)
+                    verticalArrangement = Arrangement.spacedBy(if (widePortrait) 20.dp else 14.dp)
                 ) {
                     QuizQuestionPromptCard(
                         question = slotQuestion,
@@ -535,7 +538,7 @@ private fun QuizQuestionContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                        verticalArrangement = Arrangement.spacedBy(if (widePortrait) 14.dp else 10.dp)
                     ) {
                         slotQuestion.options.forEachIndexed { index, option ->
                             QuizOptionGlassCard(

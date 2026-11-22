@@ -4,8 +4,10 @@ import com.toeicflashcard.data.local.dao.VocabularyDao
 import com.toeicflashcard.data.local.database.VocabularySeeder
 import com.toeicflashcard.data.mapper.toDomain
 import com.toeicflashcard.data.mapper.toEntity
+import com.toeicflashcard.domain.model.VocabularyDecks
 import com.toeicflashcard.domain.model.VocabularyWord
 import com.toeicflashcard.domain.repository.VocabularyRepository
+import com.toeicflashcard.domain.scheduler.Sm2Scheduler
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -92,9 +94,30 @@ class VocabularyRepositoryImpl(
     }
 
     override suspend fun updateWord(word: VocabularyWord) = withContext(ioDispatcher) {
+        val normalizedKey = VocabularyDecks.normalizeWordKey(word.word)
         vocabularyDao.updateWord(word.toEntity())
+        vocabularyDao.updateWordsByNormalizedWord(
+            normalizedWord = normalizedKey,
+            repetitions = word.repetitions,
+            intervalDays = word.intervalDays,
+            easeFactor = word.easeFactor,
+            nextReviewTimestamp = word.nextReviewTimestamp,
+            lastReviewedTimestamp = word.lastReviewedTimestamp
+        )
         synchronized(cacheLock) {
-            cachedAllWords = cachedAllWords?.map { if (it.id == word.id) word else it }
+            cachedAllWords = cachedAllWords?.map { existing ->
+                if (existing.id == word.id || VocabularyDecks.normalizeWordKey(existing.word) == normalizedKey) {
+                    existing.copy(
+                        repetitions = word.repetitions,
+                        intervalDays = word.intervalDays,
+                        easeFactor = word.easeFactor,
+                        nextReviewTimestamp = word.nextReviewTimestamp,
+                        lastReviewedTimestamp = word.lastReviewedTimestamp
+                    )
+                } else {
+                    existing
+                }
+            }
         }
     }
 
@@ -108,6 +131,106 @@ class VocabularyRepositoryImpl(
                     if (it.id in idSet) it.copy(nextReviewTimestamp = nowMillis) else it
                 }
             }
+        }
+    }
+
+    override suspend fun setWordStarred(word: VocabularyWord, isStarred: Boolean) = withContext(ioDispatcher) {
+        val normalizedKey = VocabularyDecks.normalizeWordKey(word.word)
+        vocabularyDao.updateStarredByNormalizedWord(
+            normalizedWord = normalizedKey,
+            isStarred = isStarred
+        )
+        synchronized(cacheLock) {
+            cachedAllWords = cachedAllWords?.map { existing ->
+                if (existing.id == word.id || VocabularyDecks.normalizeWordKey(existing.word) == normalizedKey) {
+                    existing.copy(isStarred = isStarred)
+                } else {
+                    existing
+                }
+            }
+        }
+    }
+
+    override suspend fun resetWordSm2Progress(word: VocabularyWord) = withContext(ioDispatcher) {
+        val normalizedKey = VocabularyDecks.normalizeWordKey(word.word)
+        val defaultEase = Sm2Scheduler.DEFAULT_EASE_FACTOR
+        vocabularyDao.resetSm2ByNormalizedWord(
+            normalizedWord = normalizedKey,
+            defaultEaseFactor = defaultEase
+        )
+        synchronized(cacheLock) {
+            cachedAllWords = cachedAllWords?.map { existing ->
+                if (existing.id == word.id || VocabularyDecks.normalizeWordKey(existing.word) == normalizedKey) {
+                    existing.copy(
+                        repetitions = 0,
+                        intervalDays = 0,
+                        easeFactor = defaultEase,
+                        nextReviewTimestamp = 0L,
+                        lastReviewedTimestamp = 0L
+                    )
+                } else {
+                    existing
+                }
+            }
+        }
+    }
+
+    override suspend fun updateCustomWord(word: VocabularyWord): Boolean = withContext(ioDispatcher) {
+        if (word.deckId != VocabularyDecks.CUSTOM_USER_ID) return@withContext false
+        val trimmedWord = word.word.trim()
+        val trimmedMeaning = word.meaningVi.trim()
+        if (trimmedWord.isEmpty() || trimmedMeaning.isEmpty()) return@withContext false
+        val trimmedTopic = word.topic.trim().ifEmpty { "Chung" }
+        val trimmedPhonetic = word.phonetic.trim()
+        val trimmedPos = word.partOfSpeech.trim().ifEmpty { "n." }
+        val trimmedExampleEn = word.exampleEn.trim()
+        val trimmedExampleVi = word.exampleVi.trim()
+
+        val updatedRows = vocabularyDao.updateCustomWordContent(
+            id = word.id,
+            word = trimmedWord,
+            phonetic = trimmedPhonetic,
+            partOfSpeech = trimmedPos,
+            meaningVi = trimmedMeaning,
+            topic = trimmedTopic,
+            exampleEn = trimmedExampleEn,
+            exampleVi = trimmedExampleVi
+        )
+        if (updatedRows > 0) {
+            synchronized(cacheLock) {
+                cachedAllWords = cachedAllWords?.map { existing ->
+                    if (existing.id == word.id && existing.deckId == VocabularyDecks.CUSTOM_USER_ID) {
+                        existing.copy(
+                            word = trimmedWord,
+                            phonetic = trimmedPhonetic,
+                            partOfSpeech = trimmedPos,
+                            meaningVi = trimmedMeaning,
+                            topic = trimmedTopic,
+                            exampleEn = trimmedExampleEn,
+                            exampleVi = trimmedExampleVi
+                        )
+                    } else {
+                        existing
+                    }
+                }
+            }
+            true
+        } else {
+            false
+        }
+    }
+
+    override suspend fun deleteCustomWord(wordId: Int): Boolean = withContext(ioDispatcher) {
+        val deletedRows = vocabularyDao.deleteCustomWordById(wordId)
+        if (deletedRows > 0) {
+            synchronized(cacheLock) {
+                cachedAllWords = cachedAllWords?.filterNot {
+                    it.id == wordId && it.deckId == VocabularyDecks.CUSTOM_USER_ID
+                }
+            }
+            true
+        } else {
+            false
         }
     }
 }

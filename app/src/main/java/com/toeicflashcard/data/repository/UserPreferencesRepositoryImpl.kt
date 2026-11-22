@@ -14,6 +14,7 @@ import com.toeicflashcard.core.audio.TtsManager
 import com.toeicflashcard.data.local.preferences.userPreferencesDataStore
 import com.toeicflashcard.domain.model.DarkTone
 import com.toeicflashcard.domain.model.ThemeMode
+import com.toeicflashcard.domain.model.ToeicTargetLevel
 import com.toeicflashcard.domain.model.UserPreferences
 import com.toeicflashcard.domain.model.VocabularyDecks
 import com.toeicflashcard.domain.repository.UserPreferencesRepository
@@ -40,6 +41,12 @@ class UserPreferencesRepositoryImpl internal constructor(
 
     @Volatile
     private var cachedSelectedDeckId: String? = null
+
+    @Volatile
+    private var cachedAutoPlayTts: Boolean? = null
+
+    @Volatile
+    private var cachedHapticEnabled: Boolean? = null
 
     private val persistedPreferences: Flow<UserPreferences> = dataStore.data
         .catch { exception ->
@@ -69,6 +76,12 @@ class UserPreferencesRepositoryImpl internal constructor(
             val dailyReviewHistory = decodeDailyReviewHistory(prefs[KEY_DAILY_REVIEW_HISTORY])
             val selectedDeckId = VocabularyDecks.normalizeSelectedDeckId(prefs[KEY_SELECTED_DECK_ID])
             cachedSelectedDeckId = selectedDeckId
+            val autoPlayTts = prefs[KEY_AUTO_PLAY_TTS] ?: true
+            cachedAutoPlayTts = autoPlayTts
+            val enableHapticFeedback = prefs[KEY_ENABLE_HAPTIC_FEEDBACK] ?: false
+            cachedHapticEnabled = enableHapticFeedback
+            val hasCompletedOnboarding = prefs[KEY_HAS_COMPLETED_ONBOARDING] ?: false
+            val targetToeicLevel = ToeicTargetLevel.fromId(prefs[KEY_TARGET_TOEIC_LEVEL]).id
             UserPreferences(
                 themeMode = themeMode,
                 darkTone = darkTone,
@@ -82,7 +95,11 @@ class UserPreferencesRepositoryImpl internal constructor(
                 reminderMinute = reminderMinute,
                 glassOpacity = glassOpacity,
                 dailyReviewHistory = dailyReviewHistory,
-                selectedDeckId = selectedDeckId
+                selectedDeckId = selectedDeckId,
+                autoPlayTts = autoPlayTts,
+                enableHapticFeedback = enableHapticFeedback,
+                hasCompletedOnboarding = hasCompletedOnboarding,
+                targetToeicLevel = targetToeicLevel
             )
         }
 
@@ -100,6 +117,10 @@ class UserPreferencesRepositoryImpl internal constructor(
     override fun getCachedSpeechRate(): Float? = cachedSpeechRate
 
     override fun getCachedSelectedDeckId(): String? = cachedSelectedDeckId
+
+    override fun getCachedAutoPlayTts(): Boolean? = cachedAutoPlayTts
+
+    override fun getCachedHapticEnabled(): Boolean? = cachedHapticEnabled
 
     override suspend fun setThemeMode(mode: ThemeMode) {
         dataStore.edit { prefs ->
@@ -120,6 +141,20 @@ class UserPreferencesRepositoryImpl internal constructor(
         cachedSpeechRate = rate
         dataStore.edit { prefs ->
             prefs[KEY_SPEECH_RATE] = rate
+        }
+    }
+
+    override suspend fun setAutoPlayTts(enabled: Boolean) {
+        cachedAutoPlayTts = enabled
+        dataStore.edit { prefs ->
+            prefs[KEY_AUTO_PLAY_TTS] = enabled
+        }
+    }
+
+    override suspend fun setEnableHapticFeedback(enabled: Boolean) {
+        cachedHapticEnabled = enabled
+        dataStore.edit { prefs ->
+            prefs[KEY_ENABLE_HAPTIC_FEEDBACK] = enabled
         }
     }
 
@@ -195,6 +230,18 @@ class UserPreferencesRepositoryImpl internal constructor(
         }
     }
 
+    override suspend fun completeOnboarding(dailyGoal: Int?, targetToeicLevel: String?) {
+        dataStore.edit { prefs ->
+            prefs[KEY_HAS_COMPLETED_ONBOARDING] = true
+            if (dailyGoal != null) {
+                prefs[KEY_DAILY_GOAL] = dailyGoal.coerceAtLeast(1)
+            }
+            if (targetToeicLevel != null) {
+                prefs[KEY_TARGET_TOEIC_LEVEL] = ToeicTargetLevel.fromId(targetToeicLevel).id
+            }
+        }
+    }
+
     companion object {
         private val KEY_THEME_MODE = stringPreferencesKey("theme_mode")
         private val KEY_DARK_TONE = stringPreferencesKey("dark_tone")
@@ -208,7 +255,11 @@ class UserPreferencesRepositoryImpl internal constructor(
         private val KEY_REMINDER_MINUTE = intPreferencesKey("reminder_minute")
         private val KEY_GLASS_OPACITY = floatPreferencesKey("glass_opacity")
         private val KEY_DAILY_REVIEW_HISTORY = stringPreferencesKey("daily_review_history")
-        private val KEY_SELECTED_DECK_ID = stringPreferencesKey("selected_deck_id")
+        private val KEY_SELECTED_DECK_ID = stringPreferencesKey("selected_deck_id_v2")
+        private val KEY_AUTO_PLAY_TTS = booleanPreferencesKey("auto_play_tts")
+        private val KEY_ENABLE_HAPTIC_FEEDBACK = booleanPreferencesKey("enable_haptic_feedback")
+        private val KEY_HAS_COMPLETED_ONBOARDING = booleanPreferencesKey("has_completed_onboarding")
+        private val KEY_TARGET_TOEIC_LEVEL = stringPreferencesKey("target_toeic_level")
 
         private const val DEFAULT_DAILY_GOAL = 10
         private const val DEFAULT_REMINDER_HOUR = 20

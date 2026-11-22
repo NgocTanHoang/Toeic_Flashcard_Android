@@ -15,4 +15,8 @@ interface VocabularyRepository {
     suspend fun insertCustomWords(words: List<VocabularyWord>): Int = 0
     suspend fun updateWord(word: VocabularyWord)
     suspend fun markWordsForUrgentReview(wordIds: List<Int>, nowMillis: Long)
+    suspend fun setWordStarred(word: VocabularyWord, isStarred: Boolean) {}
+    suspend fun resetWordSm2Progress(word: VocabularyWord) {}
+    suspend fun updateCustomWord(word: VocabularyWord): Boolean = false
+    suspend fun deleteCustomWord(wordId: Int): Boolean = false
 }

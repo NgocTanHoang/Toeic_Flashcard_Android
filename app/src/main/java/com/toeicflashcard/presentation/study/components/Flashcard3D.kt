@@ -45,6 +45,7 @@ import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
@@ -55,6 +56,42 @@ import com.toeicflashcard.domain.model.VocabularyWord
 
 private val CrystalCardShape = RoundedCornerShape(32.dp)
 private val ExampleBoxShape = RoundedCornerShape(22.dp)
+private val ShortCardHeightBreakpoint = 780.dp
+
+internal data class FlashcardLayoutMetrics(
+    val isWide: Boolean,
+    val isShortHeight: Boolean,
+    val horizontalPadding: Dp,
+    val verticalPadding: Dp,
+    val sectionSpacing: Dp,
+    val exampleInnerPadding: Dp
+)
+
+internal fun computeFlashcardLayoutMetrics(
+    screenWidthDp: Dp,
+    screenHeightDp: Dp,
+    isTabletLandscape: Boolean = false
+): FlashcardLayoutMetrics {
+    val isWide = screenWidthDp >= AdaptiveWideBreakpoint
+    val isShortHeight = screenHeightDp < ShortCardHeightBreakpoint && !isTabletLandscape
+    return FlashcardLayoutMetrics(
+        isWide = isWide,
+        isShortHeight = isShortHeight,
+        horizontalPadding = when {
+            isTabletLandscape -> 36.dp
+            isWide -> 28.dp
+            else -> 20.dp
+        },
+        verticalPadding = when {
+            isTabletLandscape -> 36.dp
+            isShortHeight -> 14.dp
+            isWide -> 28.dp
+            else -> 20.dp
+        },
+        sectionSpacing = if (isShortHeight) 12.dp else 16.dp,
+        exampleInnerPadding = if (isShortHeight) 14.dp else 18.dp
+    )
+}
 
 @Composable
 fun Flashcard3D(
@@ -63,7 +100,8 @@ fun Flashcard3D(
     onFlip: () -> Unit,
     onSpeakWord: () -> Unit,
     onSpeakExample: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isTabletLandscape: Boolean = false
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val rotationState = animateFloatAsState(
@@ -103,13 +141,15 @@ fun Flashcard3D(
         if (!showBack) {
             FlashcardFrontFace(
                 word = word,
-                onSpeakWord = onSpeakWord
+                onSpeakWord = onSpeakWord,
+                isTabletLandscape = isTabletLandscape
             )
         } else {
             FlashcardBackFace(
                 word = word,
                 onSpeakWord = onSpeakWord,
                 onSpeakExample = onSpeakExample,
+                isTabletLandscape = isTabletLandscape,
                 modifier = Modifier.graphicsLayer {
                     rotationY = 180f
                 }
@@ -121,11 +161,15 @@ fun Flashcard3D(
 @Composable
 private fun FlashcardFrontFace(
     word: VocabularyWord,
-    onSpeakWord: () -> Unit
+    onSpeakWord: () -> Unit,
+    isTabletLandscape: Boolean = false
 ) {
     val glassColors = LocalLiquidGlassColors.current
-    val isWide = LocalConfiguration.current.screenWidthDp.dp >= AdaptiveWideBreakpoint ||
-        LocalAppWindowMetrics.current.widthDp >= AdaptiveWideBreakpoint
+    val config = LocalConfiguration.current
+    val windowMetrics = LocalAppWindowMetrics.current
+    val effectiveWidth = maxOf(config.screenWidthDp.dp, windowMetrics.widthDp)
+    val effectiveHeight = minOf(config.screenHeightDp.dp, windowMetrics.heightDp)
+    val layoutMetrics = computeFlashcardLayoutMetrics(effectiveWidth, effectiveHeight, isTabletLandscape)
     val pillBg = if (glassColors.isDark) {
         Color.White.copy(alpha = 0.07f)
     } else {
@@ -137,7 +181,10 @@ private fun FlashcardFrontFace(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(if (isWide) 32.dp else 24.dp),
+            .padding(
+                horizontal = layoutMetrics.horizontalPadding,
+                vertical = layoutMetrics.verticalPadding
+            ),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
@@ -245,11 +292,15 @@ private fun FlashcardBackFace(
     word: VocabularyWord,
     onSpeakWord: () -> Unit,
     onSpeakExample: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isTabletLandscape: Boolean = false
 ) {
     val glassColors = LocalLiquidGlassColors.current
-    val isWide = LocalConfiguration.current.screenWidthDp.dp >= AdaptiveWideBreakpoint ||
-        LocalAppWindowMetrics.current.widthDp >= AdaptiveWideBreakpoint
+    val config = LocalConfiguration.current
+    val windowMetrics = LocalAppWindowMetrics.current
+    val effectiveWidth = maxOf(config.screenWidthDp.dp, windowMetrics.widthDp)
+    val effectiveHeight = minOf(config.screenHeightDp.dp, windowMetrics.heightDp)
+    val layoutMetrics = computeFlashcardLayoutMetrics(effectiveWidth, effectiveHeight, isTabletLandscape)
     val exampleWashBg = if (glassColors.isDark) {
         Color.White.copy(alpha = 0.055f)
     } else {
@@ -271,63 +322,73 @@ private fun FlashcardBackFace(
         )
     }
 
-    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-        val minFaceHeight = maxHeight
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
-                .heightIn(min = minFaceHeight)
-                .padding(if (isWide) 32.dp else 24.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(
+                horizontal = layoutMetrics.horizontalPadding,
+                vertical = layoutMetrics.verticalPadding
+            ),
+        verticalArrangement = Arrangement.spacedBy(layoutMetrics.sectionSpacing)
+    ) {
+        // Zone 1: Word + IPA + POS + compact speaker
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            // Zone 1: Word + IPA + POS + compact speaker
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    Text(
-                        text = word.word,
-                        style = MaterialTheme.typography.headlineMedium,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    val backMeta = if (word.phonetic.isNotBlank()) {
-                        "${word.phonetic}  •  ${word.partOfSpeech}"
-                    } else {
-                        word.partOfSpeech
-                    }
-                    Text(
-                        text = backMeta,
-                        style = MaterialTheme.typography.labelLarge,
-                        color = accentFg
-                    )
+                Text(
+                    text = word.word,
+                    style = MaterialTheme.typography.headlineMedium,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                val backMeta = if (word.phonetic.isNotBlank()) {
+                    "${word.phonetic}  •  ${word.partOfSpeech}"
+                } else {
+                    word.partOfSpeech
                 }
-
-                LiquidGlassIconButton(
-                    onClick = onSpeakWord,
-                    size = 36.dp,
-                    containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
-                    contentColor = MaterialTheme.colorScheme.primary
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
-                        contentDescription = "Phát âm từ ${word.word}",
-                        modifier = Modifier.size(18.dp)
-                    )
-                }
+                Text(
+                    text = backMeta,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = accentFg
+                )
             }
 
-            // Zone 2: Divider + Vietnamese Meaning
+            LiquidGlassIconButton(
+                onClick = onSpeakWord,
+                size = 36.dp,
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
+                contentColor = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
+                    contentDescription = "Phát âm từ ${word.word}",
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+
+        // Zone 2: Divider + Vietnamese Meaning centered in remaining space & independently scrollable on short viewports
+        BoxWithConstraints(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxWidth()
+        ) {
+            val centerMinHeight = maxHeight
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(18.dp)
+                    .verticalScroll(rememberScrollState())
+                    .heightIn(min = centerMinHeight)
+                    .padding(top = if (isTabletLandscape) 12.dp else 0.dp),
+                verticalArrangement = Arrangement.spacedBy(
+                    12.dp,
+                    if (isTabletLandscape) Alignment.Top else Alignment.CenterVertically
+                )
             ) {
                 Box(
                     modifier = Modifier
@@ -345,7 +406,12 @@ private fun FlashcardBackFace(
                     )
                     Text(
                         text = word.meaningVi,
-                        style = if (isWide) {
+                        style = if (isTabletLandscape) {
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = 28.sp,
+                                lineHeight = 36.sp
+                            )
+                        } else if (layoutMetrics.isWide) {
                             MaterialTheme.typography.headlineMedium.copy(
                                 fontSize = 24.sp,
                                 lineHeight = 32.sp
@@ -358,21 +424,22 @@ private fun FlashcardBackFace(
                     )
                 }
             }
+        }
 
-            // Zone 3: Context Example Card
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(ExampleBoxShape)
-                    .background(exampleWashBg)
-                    .border(
-                        width = if (glassColors.isDark) 0.85.dp else 1.dp,
-                        color = exampleBorderColor,
-                        shape = ExampleBoxShape
-                    )
-                    .padding(18.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
+        // Zone 3: Context Example Card pinned cleanly at bottom without overlapping meaning
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(ExampleBoxShape)
+                .background(exampleWashBg)
+                .border(
+                    width = if (glassColors.isDark) 0.85.dp else 1.dp,
+                    color = exampleBorderColor,
+                    shape = ExampleBoxShape
+                )
+                .padding(layoutMetrics.exampleInnerPadding),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -427,4 +494,3 @@ private fun FlashcardBackFace(
             }
         }
     }
-}

@@ -21,6 +21,7 @@ class DailyReminderWorker(
             cutoffMillis = container.timeProvider.nowMillis()
         )
         val prefs = container.userPreferencesRepository.userPreferences.first()
+        if (!prefs.reminderEnabled) return Result.success()
         val effectiveStreak = container.streakCalculator.effectiveStateForDisplay(
             stored = prefs.toStreakState(),
             todayEpochDay = container.timeProvider.todayEpochDay()

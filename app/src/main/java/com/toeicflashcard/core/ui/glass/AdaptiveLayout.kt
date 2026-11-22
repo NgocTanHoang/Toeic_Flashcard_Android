@@ -17,7 +17,7 @@ import androidx.compose.ui.unit.dp
 val AdaptiveWideBreakpoint = 600.dp
 val AdaptiveCardMinWidth = 310.dp
 val StudyContentMaxWidth = 560.dp
-val WideStudyContentMaxWidth = 720.dp
+val WideStudyContentMaxWidth = 740.dp
 val FocusedContentMaxWidth = 580.dp
 val WideQuizContentMaxWidth = 700.dp
 val MainContentMaxWidth = 1100.dp

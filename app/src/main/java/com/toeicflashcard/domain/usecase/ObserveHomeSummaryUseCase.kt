@@ -16,7 +16,7 @@ class ObserveHomeSummaryUseCase(
     private val defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) {
     operator fun invoke(): Flow<HomeSummary> =
-        invoke(kotlinx.coroutines.flow.flowOf(com.toeicflashcard.domain.model.VocabularyDecks.ALL_ID))
+        invoke(kotlinx.coroutines.flow.flowOf(com.toeicflashcard.domain.model.VocabularyDecks.DEFAULT_SELECTED_DECK_ID))
 
     operator fun invoke(selectedDeckIdFlow: Flow<String>): Flow<HomeSummary> {
         return kotlinx.coroutines.flow.combine(

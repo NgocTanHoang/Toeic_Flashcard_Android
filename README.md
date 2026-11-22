@@ -1,21 +1,21 @@
 <div align="center">
 
-# TOEIC Flashcard
+# Lexora — TOEIC Vocabulary • SM-2
 
 **Ứng dụng học từ vựng TOEIC đa giác quan & ngoại tuyến 100% trên Android (Phone, Foldable & Tablet) — thiết kế Apple Liquid Glass, thuật toán lặp lại ngắt quãng SM-2 và hiệu năng 120Hz Adaptive Refresh Rate.**
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2024.12.01-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
 [![Android API](https://img.shields.io/badge/Android-API_24_--_35-3DDC84?style=flat-square&logo=android&logoColor=white)](https://developer.android.com/)
-[![Room SQLite](https://img.shields.io/badge/Room_SQLite-2.6.1_(v3)-0F9D58?style=flat-square)](https://developer.android.com/training/data-storage/room)
+[![Room SQLite](https://img.shields.io/badge/Room_SQLite-2.6.1_(v4)-0F9D58?style=flat-square)](https://developer.android.com/training/data-storage/room)
 [![Vocabulary](https://img.shields.io/badge/T%E1%BB%AB_v%E1%BB%B1ng-2.154%2B_t%E1%BB%AB_%E2%80%A2_104_ch%E1%BB%A7_%C4%91%E1%BB%81-2563EB?style=flat-square)](#-kho-d%E1%BB%AF-li%E1%BB%87u-2154-t%E1%BB%AB-v%E1%BB%B1ng)
 [![Refresh Rate](https://img.shields.io/badge/Render-120Hz_Adaptive_RR-0D9488?style=flat-square)](#-hi%E1%BB%87u-n%C4%83ng-120hz-arr--h%C3%A0nh-vi-cu%E1%BB%99n-ios)
-[![Download APK](https://img.shields.io/badge/Download_APK-v1.3.0-10B981?style=flat-square&logo=android&logoColor=white)](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest)
+[![Download APK](https://img.shields.io/badge/Download_APK-v1.4.0-10B981?style=flat-square&logo=android&logoColor=white)](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest)
 
 <br />
 
-[Tải APK v1.3.0](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest) •
-[Video 30s & App Icon v2](#-video-giới-thiệu-30s--60fps--app-icon-liquid-glass-v2) •
+[Tải APK v1.4.0](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest) •
+[Video 30s & App Icon v3](#-video-giới-thiệu-30s--60fps--app-icon-liquid-glass-v3) •
 [Tính năng nổi bật](#-tính-năng-nổi-bật) •
 [Adaptive Tablet & Fold](#-giao-diện-thích-ứng-phone--foldable--tablet) •
 [Thư viện giao diện](#-thư-viện-giao-diện-thực-tế-light-mode-vs-dark-mode) •
@@ -43,34 +43,38 @@
 
 ---
 
-## 🎬 Video giới thiệu (30s • 60fps) & App Icon Liquid Glass v2
+## 🎬 Video giới thiệu (30s • 60fps) & App Icon Liquid Glass v3
 
 <table>
   <tr>
     <th width="36%">Video Promo Showreel (1080×1920 • 60fps)</th>
-    <th width="64%">App Icon Adaptive v2 (API 24–35)</th>
+    <th width="64%">App Icon Adaptive v3 — Lexora Glass Monogram (API 24–35)</th>
   </tr>
   <tr>
     <td align="center">
       <a href="media/toeic_flashcard_promo_30s.mp4">
-        <img src="media/promo_poster.png" width="210" alt="Xem Video Promo 30s 60fps TOEIC Flashcard" />
+        <img src="media/promo_poster.png" width="210" alt="Xem Video Promo 30s 60fps Lexora" />
       </a>
       <br />
       <sub><a href="media/toeic_flashcard_promo_30s.mp4"><b>▶ Xem / Tải Video MP4 60fps (30s)</b></a></sub>
     </td>
     <td align="center">
-      <img src="media/app_icon_preview_v2.png" width="320" alt="App Icon Adaptive v2" />
+      <img src="media/app_icon_preview_v3.png" width="320" alt="App Icon Adaptive v3 Lexora" />
       <br />
-      <sub>Adaptive Icon v2 sắc nét (loại bỏ ngôi sao AI), hỗ trợ Squircle / Circle / Rounded Square / Monochrome API 33+</sub>
+      <sub>Adaptive Icon v3 "Lexora Glass Monogram" chiếm 70% Safe Zone, hỗ trợ Squircle / Circle / Rounded Square / Monochrome API 33+</sub>
     </td>
   </tr>
 </table>
 
 ---
 
-## ✨ Tính năng nổi bật
+## ✨ Tính năng nổi bật (Cập nhật v1.4.0 — Lexora)
 
-- **4 Kho học liệu chuẩn hóa — 2.154+ từ vựng / 104 chủ đề:** Chuyển đổi tức thì qua **Deck Dropdown Switcher** (`DeckSwitcherSheet`) giữa *Tất cả bộ từ*, *600 Essential Words*, *800 Từ TOEIC Level 450*, *TOEIC Cốt Lõi (775)* và *Từ vựng tự thêm* — bảo toàn 100% lịch sử ôn tập SM-2 khi chuyển giáo trình và đồng bộ xuyên suốt Trang chủ, Kho từ, Luyện tập & Thống kê.
+- **Nhận diện thương hiệu Lexora & App Icon v3:** Tên hiển thị Launcher gọn gàng (`Lexora`), Header/About kèm phụ đề `TOEIC Vocabulary • SM-2`, Adaptive Icon v3 phóng to 70% Safe Zone (giữ nguyên `applicationId = "com.toeicflashcard"` để cập nhật đè không mất dữ liệu học).
+- **Màn hình Chủ đề riêng (`DeckTopicsScreen`) với Floating Search Glass:** Khi chọn bộ từ / bấm `Tiếp tục học ->`, điều hướng sang màn hình `DeckTopicsRoute` toàn màn hình; thanh tìm kiếm `LiquidGlassSearchCapsule` trôi lên thả nổi khi cuộn, tuân theo độ mờ & độ trong suốt trong Cài đặt, kèm ngưỡng cuộn ngược `52.dp` chống tụt nhầm và tối ưu GPU không render blur thừa.
+- **4 Kho học liệu chuẩn hóa — 2.154+ từ vựng / 104 chủ đề:** Chuyển đổi tức thì qua **Deck Dropdown Switcher** (`DeckSwitcherSheet`) giữa *600 Từ TOEIC Cốt Lõi*, *775 Từ TOEIC Mở Rộng*, *800 Từ TOEIC Nâng Cao* và *Từ Vựng Của Tôi* — đồng bộ tên gọi xuyên suốt Home, Kho từ, Luyện tập & Thống kê.
+- **Chu trình học lõi & Kho từ nâng cao (Phases 1–4):** Hỗ trợ **Hoàn tác (Undo)** lượt đánh giá SM-2 vừa bấm, thẻ **`SessionSummaryCard`** tổng kết phiên học, **`WordDetailSheet`** (sửa, xóa, đánh dấu sao `★ isStarred`, đặt lại tiến độ SM-2), **`OnboardingSheet`** cho người mới, và **`ReminderBootReceiver`** tự khôi phục lịch nhắc nhở sau khi khởi động lại máy.
+- **Tinh gọn UX theo Progressive Disclosure & Tablet Landscape (`>= 900.dp`):** Giảm trùng lặp nút theo đặc tả [`docs/UI_AUDIT_BLUEPRINT.md`](./docs/UI_AUDIT_BLUEPRINT.md); trên Tablet ngang (như Redmi Pad 2 16:10), `HomeScreen` hiển thị hàng 4 bộ từ + lưới chủ đề 3 cột trực tiếp, còn `StudyScreen` kích hoạt bố cục 2 cột ngang (`68%` Flashcard 3D + `32%` cột 4 nút SM-2).
 - **Thẻ Flashcard 3D Liquid Glass & Phát âm ngoại tuyến TTS:** Hiệu ứng lật `rotationY` 3D mượt mà (`graphicsLayer`, `tween 480ms`). Mặt trước tối giản với chủ đề, loại từ, IPA và nút loa TTS (`0.75x` / `1.0x`); mặt sau bố trí 3 tầng cân đối gồm từ chính kèm loa `36.dp`, nghĩa tiếng Việt và khung **Ví dụ ngữ cảnh** tương phản cao kèm loa đọc câu ví dụ.
 - **Thanh đánh giá SM-2 sắc nét (`Quên • Khó • Bình thường • Dễ`):** Tính toán thời điểm ôn lại tối ưu kèm nhãn xem trước khoảng lặp (`< 1 ngày`, `1 ngày`, `6 ngày`, `N tháng`/`năm`), kết hợp **Daily Streak**, mục tiêu ngày (`5`/`10`/`20` từ) và lịch sử ôn tập 14 ngày.
 - **Collapsible Top Bar + Sticky Floating Search Pill (phong cách iOS Safari):** Khi cuộn xuống danh sách Trang chủ hoặc Kho từ, hàng tiêu đề trên cùng và khung nền mờ dần rồi trượt ẩn mượt mà, nhường chỗ cho **viên thuốc kính Search (`CircleShape`, `hazeChild 18.dp`)** thu hẹp lơ lửng ngay dưới status bar đồng bộ với tự ẩn của `LiquidGlassBottomDock`.
@@ -301,7 +305,7 @@ cd Toeic_Flashcard_Android
 ./gradlew.bat installDebug
 ```
 
-> **Cài đặt nhanh cho người dùng:** Tải trực tiếp file `TOEIC-Flashcard-v1.3.0.apk` tại trang [**GitHub Releases**](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest). Các bản cập nhật ký chung keystore giữ nguyên **100% dữ liệu SM-2 và từ tự thêm** khi cài đè.
+> **Cài đặt nhanh cho người dùng:** Tải trực tiếp file `Lexora-v1.4.0.apk` tại trang [**GitHub Releases**](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest). Các bản cập nhật ký chung keystore giữ nguyên **100% dữ liệu SM-2 và từ tự thêm** khi cài đè.
 
 ### Chạy thử nghiệm đa thiết bị Low-RAM (`Q1`–`Q11`, trần `<= 2.0 GB` RAM)
 Dự án đi kèm bộ launcher [`Start_Emulator.bat`](./Start_Emulator.bat) / [`tools/launch_toeic_avd.ps1`](./tools/launch_toeic_avd.ps1) hỗ trợ chuyển nhanh 11 cấu hình màn hình thực tế (TECNO CLA5, Galaxy Z Fold 7/8 Cover & Inner, OPPO Pad SE, Redmi Pad 2 dọc/ngang, Xiaomi Pad 8, Split-Screen) mà chỉ dùng 1 máy ảo nền (`-memory 1152 -gpu swiftshader_indirect`).
@@ -330,5 +334,6 @@ Trong tab **Kho từ** -> nhấn nút **`+`** -> chuyển sang tab **Nhập file
 
 ## 📄 Tài liệu kiến trúc & kỹ thuật
 
-- **[`docs/TECHNICAL_DOCUMENTATION.md`](./docs/TECHNICAL_DOCUMENTATION.md)** — Đặc tả kỹ thuật chi tiết (`v1.3.0`): Clean Architecture, SM-2 (`reviewDueCount` vs `newWordsCount`), Ma trận Adaptive UI 11 thiết bị (`Q1`–`Q11`), Room v3 & CI/CD.
+- **[`docs/TECHNICAL_DOCUMENTATION.md`](./docs/TECHNICAL_DOCUMENTATION.md)** — Đặc tả kỹ thuật chi tiết (`v1.4.0`): Clean Architecture, SM-2 (`reviewDueCount` vs `newWordsCount`), `DeckTopicsScreen` + `CollapsibleHeaderState`, Ma trận Adaptive UI 11 thiết bị (`Q1`–`Q11`), Room v4 & CI/CD.
+- **[`docs/UI_AUDIT_BLUEPRINT.md`](./docs/UI_AUDIT_BLUEPRINT.md)** — Đặc tả kiểm toán giao diện, sơ đồ luồng người dùng Mermaid & ASCII wireframe dùng để tinh gọn Progressive Disclosure.
 - **[`PROJECT_REPORT.md`](./PROJECT_REPORT.md)** — Báo cáo tổng hợp 14 Use Cases, Sequence Diagrams, Lược đồ CSDL, Máy trạng thái và Kết quả kiểm thử toàn dự án.

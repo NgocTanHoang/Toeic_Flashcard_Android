@@ -1,6 +1,7 @@
 package com.toeicflashcard.domain.usecase
 
 import com.toeicflashcard.core.time.TimeProvider
+import com.toeicflashcard.domain.model.VocabularyDecks
 import com.toeicflashcard.domain.model.VocabularyWord
 import com.toeicflashcard.domain.repository.VocabularyRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -28,11 +29,17 @@ class GetStudyQueueUseCase(
     ): StudyQueueResult? {
         val cached = vocabularyRepository.getCachedAllWords()
         if (cached.isNullOrEmpty()) return null
+        val learnedWordKeys = cached
+            .asSequence()
+            .filter { it.isLearned }
+            .map { VocabularyDecks.normalizeWordKey(it.word) }
+            .toHashSet()
         val scopedWords = filterByDeck(cached, deckId)
         return buildQueueFromAllWords(
             allWords = scopedWords,
             topic = topic,
-            hardWordsOnly = hardWordsOnly
+            hardWordsOnly = hardWordsOnly,
+            learnedWordKeys = learnedWordKeys
         )
     }
 
@@ -44,24 +51,41 @@ class GetStudyQueueUseCase(
         vocabularyRepository.ensureSeeded()
 
         val activeDeckId = normalizeActiveDeckId(deckId)
+        val allRepositoryWords = vocabularyRepository.getCachedAllWords()
+            ?.takeIf { it.isNotEmpty() }
+            ?: vocabularyRepository.getAllWords()
+        val learnedWordKeys = allRepositoryWords
+            .asSequence()
+            .filter { it.isLearned }
+            .map { VocabularyDecks.normalizeWordKey(it.word) }
+            .toHashSet()
+
         if (hardWordsOnly) {
-            val allWords = filterByDeck(vocabularyRepository.getAllWords(), activeDeckId)
+            val allWords = filterByDeck(allRepositoryWords, activeDeckId)
             return@withContext buildHardWordsQueue(allWords)
         }
 
         val cutoffMillis = timeProvider.endOfTodayMillis()
         if (topic.isNullOrBlank()) {
             val rawDueWords = vocabularyRepository.getDueWords(cutoffMillis)
-            val dueWords = if (activeDeckId == null) {
+            val scopedDueWords = if (activeDeckId == null) {
                 rawDueWords
             } else {
                 rawDueWords.filter { it.deckId == activeDeckId }
-            }.take(DEFAULT_DAILY_SESSION_LIMIT)
-            return@withContext StudyQueueResult(words = dueWords, isPracticeMode = false)
+            }
+            val deduplicatedDueWords = deduplicateDueWords(
+                words = scopedDueWords,
+                learnedWordKeys = learnedWordKeys
+            ).take(DEFAULT_DAILY_SESSION_LIMIT)
+            return@withContext StudyQueueResult(words = deduplicatedDueWords, isPracticeMode = false)
         }
 
         val topicWords = filterByDeck(vocabularyRepository.getWordsByTopic(topic), activeDeckId)
-        buildTopicQueue(topicWords = topicWords, cutoffMillis = cutoffMillis)
+        buildTopicQueue(
+            topicWords = topicWords,
+            cutoffMillis = cutoffMillis,
+            learnedWordKeys = learnedWordKeys
+        )
     }
 
     private fun normalizeActiveDeckId(deckId: String?): String? {
@@ -81,7 +105,8 @@ class GetStudyQueueUseCase(
     private fun buildQueueFromAllWords(
         allWords: List<VocabularyWord>,
         topic: String?,
-        hardWordsOnly: Boolean
+        hardWordsOnly: Boolean,
+        learnedWordKeys: Set<String>
     ): StudyQueueResult {
         if (hardWordsOnly) {
             return buildHardWordsQueue(allWords)
@@ -89,17 +114,23 @@ class GetStudyQueueUseCase(
 
         val cutoffMillis = timeProvider.endOfTodayMillis()
         if (topic.isNullOrBlank()) {
-            val dueWords = allWords
-                .filter { it.isDue(cutoffMillis) }
-                .sortedWith(DEFAULT_ORDER_COMPARATOR)
-                .take(DEFAULT_DAILY_SESSION_LIMIT)
+            val dueWords = deduplicateDueWords(
+                words = allWords
+                    .filter { it.isDue(cutoffMillis) }
+                    .sortedWith(DEFAULT_ORDER_COMPARATOR),
+                learnedWordKeys = learnedWordKeys
+            ).take(DEFAULT_DAILY_SESSION_LIMIT)
             return StudyQueueResult(words = dueWords, isPracticeMode = false)
         }
 
         val topicWords = allWords
             .filter { it.topic == topic }
             .sortedWith(DEFAULT_ORDER_COMPARATOR)
-        return buildTopicQueue(topicWords = topicWords, cutoffMillis = cutoffMillis)
+        return buildTopicQueue(
+            topicWords = topicWords,
+            cutoffMillis = cutoffMillis,
+            learnedWordKeys = learnedWordKeys
+        )
     }
 
     private fun buildHardWordsQueue(allWords: List<VocabularyWord>): StudyQueueResult {
@@ -111,25 +142,88 @@ class GetStudyQueueUseCase(
                     .thenBy { it.repetitions }
                     .thenBy { it.id }
             )
+            .distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
             .take(DEFAULT_DAILY_SESSION_LIMIT)
         return StudyQueueResult(words = hardWords, isPracticeMode = true)
     }
 
     private fun buildTopicQueue(
         topicWords: List<VocabularyWord>,
-        cutoffMillis: Long
+        cutoffMillis: Long,
+        learnedWordKeys: Set<String>
     ): StudyQueueResult {
-        val dueInTopic = topicWords.filter { it.isDue(cutoffMillis) }
+        val dueInTopic = deduplicateDueWords(
+            words = topicWords.filter { it.isDue(cutoffMillis) },
+            learnedWordKeys = learnedWordKeys
+        )
         return if (dueInTopic.isNotEmpty()) {
             StudyQueueResult(words = dueInTopic, isPracticeMode = false)
         } else {
-            val practiceWords = topicWords.sortedWith(DEFAULT_ORDER_COMPARATOR)
+            val practiceWords = topicWords
+                .sortedWith(DEFAULT_ORDER_COMPARATOR)
+                .distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
             StudyQueueResult(words = practiceWords, isPracticeMode = true)
         }
     }
 
+    private fun deduplicateDueWords(
+        words: List<VocabularyWord>,
+        learnedWordKeys: Set<String>
+    ): List<VocabularyWord> {
+        return words
+            .filterNot { word ->
+                // Skip brand-new word if the exact English word is already learned in another deck
+                word.repetitions == 0 && VocabularyDecks.normalizeWordKey(word.word) in learnedWordKeys
+            }
+            .distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
+    }
+
+    suspend fun getNextNewWordsQueue(
+        deckId: String?,
+        limit: Int = DEFAULT_DAILY_SESSION_LIMIT
+    ): StudyQueueResult = withContext(defaultDispatcher) {
+        vocabularyRepository.ensureSeeded()
+        val allRepositoryWords = vocabularyRepository.getCachedAllWords()
+            ?.takeIf { it.isNotEmpty() }
+            ?: vocabularyRepository.getAllWords()
+        val learnedWordKeys = allRepositoryWords
+            .asSequence()
+            .filter { it.isLearned }
+            .map { VocabularyDecks.normalizeWordKey(it.word) }
+            .toHashSet()
+        val scopedWords = filterByDeck(allRepositoryWords, deckId)
+        val newWords = scopedWords
+            .asSequence()
+            .filter { it.repetitions == 0 && !it.isLearned }
+            .filterNot { VocabularyDecks.normalizeWordKey(it.word) in learnedWordKeys }
+            .sortedWith(DEFAULT_ORDER_COMPARATOR)
+            .distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
+            .take(limit.coerceAtLeast(1))
+            .toList()
+        StudyQueueResult(words = newWords, isPracticeMode = false)
+    }
+
+    suspend fun countRemainingNewWords(deckId: String?): Int = withContext(defaultDispatcher) {
+        val allRepositoryWords = vocabularyRepository.getCachedAllWords()
+            ?.takeIf { it.isNotEmpty() }
+            ?: vocabularyRepository.getAllWords()
+        val learnedWordKeys = allRepositoryWords
+            .asSequence()
+            .filter { it.isLearned }
+            .map { VocabularyDecks.normalizeWordKey(it.word) }
+            .toHashSet()
+        val scopedWords = filterByDeck(allRepositoryWords, deckId)
+        scopedWords
+            .asSequence()
+            .filter { it.repetitions == 0 && !it.isLearned }
+            .filterNot { VocabularyDecks.normalizeWordKey(it.word) in learnedWordKeys }
+            .map { VocabularyDecks.normalizeWordKey(it.word) }
+            .distinct()
+            .count()
+    }
+
     companion object {
-        const val DEFAULT_DAILY_SESSION_LIMIT = 20
+        const val DEFAULT_DAILY_SESSION_LIMIT = 15
 
         private val DEFAULT_ORDER_COMPARATOR =
             compareBy<VocabularyWord> { it.nextReviewTimestamp }.thenBy { it.id }

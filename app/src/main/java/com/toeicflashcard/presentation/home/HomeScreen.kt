@@ -1,12 +1,13 @@
 package com.toeicflashcard.presentation.home
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -19,7 +20,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -36,10 +36,11 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowForward
+import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.ChevronRight
-import androidx.compose.material.icons.rounded.DarkMode
-import androidx.compose.material.icons.rounded.KeyboardArrowDown
-import androidx.compose.material.icons.rounded.LightMode
+import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -49,7 +50,9 @@ import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -59,10 +62,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
 import androidx.compose.ui.input.nestedscroll.nestedScroll
-import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onSizeChanged
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -70,7 +73,6 @@ import androidx.compose.ui.unit.dp
 import com.toeicflashcard.core.ui.glass.AdaptiveCardMinWidth
 import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.CollapsibleHeaderSpring
-import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassSearchCapsule
@@ -81,7 +83,9 @@ import com.toeicflashcard.core.ui.glass.screenHorizontalPadding
 import com.toeicflashcard.core.ui.glass.sectionVerticalSpacing
 import com.toeicflashcard.core.ui.theme.LocalGlassOpacity
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
+import com.toeicflashcard.domain.model.DeckProgress
 import com.toeicflashcard.domain.model.TopicProgress
+import com.toeicflashcard.domain.model.VocabularyDecks
 import com.toeicflashcard.presentation.home.components.HeroGlassDashboard
 import dev.chrisbanes.haze.HazeState
 import dev.chrisbanes.haze.HazeStyle
@@ -89,9 +93,8 @@ import dev.chrisbanes.haze.HazeTint
 import dev.chrisbanes.haze.hazeChild
 import java.text.NumberFormat
 import java.util.Locale
-import kotlin.math.roundToInt
 
-private val TopicCardShape = RoundedCornerShape(20.dp)
+private val FlatDeckCardShape = RoundedCornerShape(14.dp)
 
 @Composable
 fun HomeScreen(
@@ -100,16 +103,33 @@ fun HomeScreen(
     headerHeightDp: Dp,
     gridState: LazyGridState,
     nestedScrollConnection: NestedScrollConnection,
+    onSelectDeck: (String) -> Unit = {},
+    onOpenDeckTopics: (String) -> Unit = {},
     onSelectDailyGoal: (Int) -> Unit,
     onStartDueReview: () -> Unit,
-    onSelectTopic: (String) -> Unit,
-    onOpenStandardQuiz: () -> Unit = {},
-    onOpenListeningQuiz: () -> Unit = {}
+    onSelectTopic: (String) -> Unit
 ) {
     val filteredTopics = if (topicQuery.isBlank()) {
         state.topics
     } else {
         state.filteredTopics
+    }
+
+    val activeDeck = remember(state.decks, state.selectedDeckId) {
+        val targetId = if (state.selectedDeckId == VocabularyDecks.ALL_ID) {
+            VocabularyDecks.DEFAULT_SELECTED_DECK_ID
+        } else {
+            state.selectedDeckId
+        }
+        state.decks.firstOrNull { it.deckId == targetId }
+            ?: state.decks.firstOrNull { it.deckId == VocabularyDecks.DEFAULT_SELECTED_DECK_ID }
+    }
+
+    val discoverDecks = remember(state.decks, activeDeck) {
+        val activeId = activeDeck?.deckId ?: VocabularyDecks.DEFAULT_SELECTED_DECK_ID
+        VocabularyDecks.orderedCurriculumIds
+            .filter { it != activeId }
+            .mapNotNull { deckId -> state.decks.firstOrNull { it.deckId == deckId } }
     }
 
     AnimatedContent(
@@ -131,7 +151,8 @@ fun HomeScreen(
             }
         } else {
             BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
-                val isWideHero = maxWidth >= AdaptiveWideBreakpoint
+                val isWide = maxWidth >= AdaptiveWideBreakpoint
+                val isTabletLandscape = maxWidth >= 900.dp
                 val sidePad = adaptiveHorizontalPadding(
                     availableWidth = maxWidth,
                     maxContentWidth = MainContentMaxWidth
@@ -148,103 +169,169 @@ fun HomeScreen(
                     contentPadding = PaddingValues(
                         start = sidePad,
                         end = sidePad,
-                        top = headerHeightDp + 10.dp,
+                        top = headerHeightDp + 12.dp,
                         bottom = 108.dp
                     ),
                     horizontalArrangement = Arrangement.spacedBy(gridGap),
                     verticalArrangement = Arrangement.spacedBy(gridGap)
                 ) {
+                    // Section 2 & 3: Daily Overview (Liquid Glass) + Primary Action
                     item(
-                        key = "__hero__",
+                        key = "__daily_overview__",
                         span = { GridItemSpan(maxLineSpan) },
-                        contentType = "hero"
+                        contentType = "daily_overview"
                     ) {
                         HeroGlassDashboard(
                             reviewDueCount = state.reviewDueCount,
                             newWordsCount = state.newWordsCount,
-                            learnedCount = state.learnedCount,
-                            totalCount = state.totalCount,
-                            currentStreak = state.currentStreak,
-                            hasStudiedToday = state.hasStudiedToday,
                             dailyReviewedCount = state.dailyReviewedCount,
                             dailyGoal = state.dailyGoal,
-                            continueTopic = state.continueTopic,
-                            isWide = isWideHero,
+                            isWide = isWide,
                             onSelectDailyGoal = onSelectDailyGoal,
                             onStartDueReview = onStartDueReview,
-                            onSelectTopic = onSelectTopic,
-                            onOpenStandardQuiz = onOpenStandardQuiz,
-                            onOpenListeningQuiz = onOpenListeningQuiz,
                             modifier = Modifier.padding(bottom = (sectionGap - gridGap).coerceAtLeast(4.dp))
                         )
                     }
 
-                    item(
-                        key = "__section_header__",
-                        span = { GridItemSpan(maxLineSpan) },
-                        contentType = "section_header"
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(horizontal = 4.dp, vertical = 4.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "Chủ đề TOEIC",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = if (topicQuery.isBlank()) {
-                                    "${state.topics.size} chủ đề"
-                                } else {
-                                    "${filteredTopics.size}/${state.topics.size}"
-                                },
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
+                    // Section 4 & 5: On Tablet Landscape (>=900dp), show all 4 decks in 1 balanced row + direct 3-col topics below
+                    if (isTabletLandscape && state.decks.isNotEmpty()) {
+                        val fourDecks = VocabularyDecks.orderedCurriculumIds.mapNotNull { deckId ->
+                            state.decks.firstOrNull { it.deckId == deckId }
                         }
-                    }
-
-                    items(
-                        items = filteredTopics,
-                        key = { it.topic },
-                        contentType = { "topic_card" }
-                    ) { topicProgress ->
-                        val onTopicClick = remember(topicProgress.topic, onSelectTopic) {
-                            { onSelectTopic(topicProgress.topic) }
-                        }
-                        TopicGlassCard(
-                            topicProgress = topicProgress,
-                            onClick = onTopicClick,
-                            isWide = isWideHero,
-                            modifier = Modifier.animateItem()
-                        )
-                    }
-
-                    if (filteredTopics.isEmpty()) {
                         item(
-                            key = "__empty_search__",
+                            key = "__tablet_four_decks_header__",
                             span = { GridItemSpan(maxLineSpan) },
-                            contentType = "empty_search"
+                            contentType = "section_header"
                         ) {
-                            LiquidGlassCard(
-                                shape = TopicCardShape,
-                                modifier = Modifier.fillMaxWidth()
+                            HomeSectionHeader(
+                                title = "Bộ từ vựng TOEIC",
+                                subtitle = "${fourDecks.size} lộ trình"
+                            )
+                        }
+
+                        item(
+                            key = "__tablet_four_decks_row__",
+                            span = { GridItemSpan(maxLineSpan) },
+                            contentType = "tablet_four_decks"
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(gridGap)
                             ) {
-                                Text(
-                                    text = if (topicQuery.isBlank() && state.totalCount == 0) {
-                                        "Bộ từ \"${state.selectedDeckName}\" chưa có từ vựng nào. Hãy sang tab Kho từ bấm nút + để thêm từ mới hoặc chọn bộ từ khác."
-                                    } else {
-                                        "Không tìm thấy chủ đề phù hợp với \"$topicQuery\"."
-                                    },
-                                    style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.padding(18.dp)
+                                fourDecks.forEach { deck ->
+                                    TabletDeckFlatCard(
+                                        deck = deck,
+                                        isActive = deck.deckId == activeDeck?.deckId,
+                                        onClick = { onSelectDeck(deck.deckId) },
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
+                    } else {
+                        if (activeDeck != null) {
+                            item(
+                                key = "__my_decks_header__",
+                                span = { GridItemSpan(maxLineSpan) },
+                                contentType = "section_header"
+                            ) {
+                                HomeSectionHeader(
+                                    title = "Bộ từ vựng của bạn",
+                                    subtitle = "${activeDeck.topicCount} chủ đề",
+                                    onSubtitleClick = { onOpenDeckTopics(activeDeck.deckId) }
                                 )
+                            }
+
+                            item(
+                                key = "__my_active_deck__",
+                                span = { GridItemSpan(maxLineSpan) },
+                                contentType = "my_deck"
+                            ) {
+                                MyDeckFlatCard(
+                                    deck = activeDeck,
+                                    isExpanded = false,
+                                    onContinueClick = { onOpenDeckTopics(activeDeck.deckId) }
+                                )
+                            }
+                        }
+
+                        if (discoverDecks.isNotEmpty()) {
+                            item(
+                                key = "__discover_decks_header__",
+                                span = { GridItemSpan(maxLineSpan) },
+                                contentType = "section_header"
+                            ) {
+                                HomeSectionHeader(
+                                    title = "Khám phá thêm bộ từ",
+                                    subtitle = "${discoverDecks.size} lộ trình",
+                                    modifier = Modifier.padding(top = 6.dp)
+                                )
+                            }
+
+                            items(
+                                items = discoverDecks,
+                                key = { "discover_${it.deckId}" },
+                                contentType = { "discover_deck" }
+                            ) { deck ->
+                                DiscoverDeckFlatCard(
+                                    deck = deck,
+                                    onClick = {
+                                        onSelectDeck(deck.deckId)
+                                        onOpenDeckTopics(deck.deckId)
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Detailed topic list: always visible on Tablet Landscape (>=900dp), or when searching on phone
+                    if (isTabletLandscape || topicQuery.isNotBlank()) {
+                        item(
+                            key = "__active_topics_header__",
+                            span = { GridItemSpan(maxLineSpan) },
+                            contentType = "section_header"
+                        ) {
+                            HomeSectionHeader(
+                                title = "Chủ đề trong ${VocabularyDecks.dashboardTitleFor(activeDeck?.deckId ?: state.selectedDeckId)}",
+                                subtitle = "${filteredTopics.size} bài",
+                                modifier = Modifier.padding(top = 6.dp)
+                            )
+                        }
+
+                        items(
+                            items = filteredTopics,
+                            key = { "topic_${it.topic}" },
+                            contentType = { "topic_card" }
+                        ) { topicProgress ->
+                            val onTopicClick = remember(topicProgress.topic, onSelectTopic) {
+                                { onSelectTopic(topicProgress.topic) }
+                            }
+                            TopicFlatCard(
+                                topicProgress = topicProgress,
+                                onClick = onTopicClick,
+                                isWide = isWide,
+                                modifier = Modifier.animateItem()
+                            )
+                        }
+
+                        if (filteredTopics.isEmpty()) {
+                            item(
+                                key = "__empty_topics__",
+                                span = { GridItemSpan(maxLineSpan) },
+                                contentType = "empty_topics"
+                            ) {
+                                FlatSurfaceCard(modifier = Modifier.fillMaxWidth()) {
+                                    Text(
+                                        text = if (topicQuery.isBlank() && state.totalCount == 0) {
+                                            "Bộ từ \"${state.selectedDeckName}\" chưa có từ vựng nào. Hãy sang tab Kho từ bấm nút + để thêm từ mới."
+                                        } else {
+                                            "Không tìm thấy chủ đề phù hợp với \"$topicQuery\"."
+                                        },
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.padding(16.dp)
+                                    )
+                                }
                             }
                         }
                     }
@@ -264,35 +351,24 @@ fun HomeScreen(
 
 @Composable
 fun FloatingGlassHomeHeader(
-    selectedDeckName: String,
-    totalCount: Int,
     topicCount: Int,
     topicQuery: String,
     isCollapsed: Boolean = false,
     onTopicQueryChange: (String) -> Unit,
-    onOpenDeckSwitcher: () -> Unit,
     onOpenReminderSettings: () -> Unit,
-    onToggleLightDark: (currentlyDark: Boolean) -> Unit,
     contentHazeState: HazeState,
     modifier: Modifier = Modifier
 ) {
-    val density = LocalDensity.current
     val horizPad = screenHorizontalPadding(LocalConfiguration.current.screenWidthDp.dp)
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
+    var isSearchExpanded by rememberSaveable { mutableStateOf(false) }
     var topRowHeightPx by remember { mutableIntStateOf(0) }
     val collapseProgressState = animateFloatAsState(
         targetValue = if (isCollapsed) 1f else 0f,
         animationSpec = CollapsibleHeaderSpring,
         label = "home_header_collapse"
     )
-    val extraTopGapPx = remember(density) { with(density) { 8.dp.toPx() } }
-    val extraSideMarginPx = remember(density) { with(density) { 16.dp.toPx() } }
-    val floatingShadowPx = remember(density, glassColors.isDark) {
-        with(density) { (if (glassColors.isDark) 8.dp else 10.dp).toPx() }
-    }
-    val ambientShadowTint = Color(0xFF0F172A).copy(alpha = if (glassColors.isDark) 0.45f else 0.16f)
-    val spotShadowTint = Color(0xFF0F172A).copy(alpha = if (glassColors.isDark) 0.55f else 0.24f)
 
     val headerTint = if (glassColors.isDark) {
         glassColors.hazeBackground.copy(alpha = glassOpacity)
@@ -311,15 +387,15 @@ fun FloatingGlassHomeHeader(
         )
     }
 
+    val searchOpen = isSearchExpanded || topicQuery.isNotEmpty()
+
     Box(modifier = modifier) {
-        // Layer 1: Full-bleed frosted header backdrop fading cleanly when collapsed
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .graphicsLayer {
                     val p = collapseProgressState.value
-                    alpha = (1f - p).coerceIn(0f, 1f)
-                    translationY = -topRowHeightPx * 0.5f * p
+                    alpha = (1f - p * 0.15f).coerceIn(0.85f, 1f)
                 }
                 .hazeChild(
                     state = contentHazeState,
@@ -335,7 +411,6 @@ fun FloatingGlassHomeHeader(
             )
         }
 
-        // Layer 2: Collapsing top bar + Sticky floating frosted search pill centered at 1100.dp
         Column(
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -354,29 +429,70 @@ fun FloatingGlassHomeHeader(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .graphicsLayer {
-                            val p = collapseProgressState.value
-                            translationY = -topRowHeightPx * p
-                            alpha = (1f - p * 1.35f).coerceIn(0f, 1f)
-                        }
                         .padding(horizontal = horizPad, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    DeckSwitcherPill(
-                        selectedDeckName = selectedDeckName,
-                        totalCount = totalCount,
-                        topicCount = topicCount,
-                        enabled = !isCollapsed,
-                        onClick = onOpenDeckSwitcher,
-                        modifier = Modifier.weight(1f)
-                    )
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(36.dp)
+                                .clip(CircleShape)
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Rounded.AutoStories,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                        Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                            Text(
+                                text = "Lexora",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = "TOEIC Vocabulary • SM-2",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
 
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         LiquidGlassIconButton(
+                            onClick = {
+                                if (searchOpen) {
+                                    isSearchExpanded = false
+                                    onTopicQueryChange("")
+                                } else {
+                                    isSearchExpanded = true
+                                }
+                            },
+                            size = 40.dp
+                        ) {
+                            Icon(
+                                imageVector = if (searchOpen) Icons.Rounded.Close else Icons.Rounded.Search,
+                                contentDescription = if (searchOpen) "Đóng tìm kiếm" else "Tìm kiếm nhanh",
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+
+                        LiquidGlassIconButton(
                             onClick = onOpenReminderSettings,
-                            size = 40.dp,
-                            enabled = !isCollapsed
+                            size = 40.dp
                         ) {
                             Icon(
                                 imageVector = Icons.Rounded.Settings,
@@ -384,73 +500,88 @@ fun FloatingGlassHomeHeader(
                                 modifier = Modifier.size(20.dp)
                             )
                         }
-
-                        ThemeQuickToggleGlassButton(
-                            isDark = glassColors.isDark,
-                            enabled = !isCollapsed,
-                            onClick = { onToggleLightDark(glassColors.isDark) }
-                        )
                     }
                 }
             }
 
-            LiquidGlassSearchCapsule(
-                query = topicQuery,
-                placeholder = "Tìm trong $topicCount chủ đề (Marketing, Thuế...)",
-                onQueryChange = onTopicQueryChange,
-                hazeState = contentHazeState,
-                floatingBlurRadius = 18.dp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(start = horizPad, end = horizPad, bottom = 12.dp)
-                    .layout { measurable, constraints ->
-                        val inset = (extraSideMarginPx * collapseProgressState.value).roundToInt()
-                        val narrowedMaxWidth = (constraints.maxWidth - inset * 2).coerceAtLeast(0)
-                        val placeable = measurable.measure(
-                            constraints.copy(
-                                minWidth = constraints.minWidth.coerceAtMost(narrowedMaxWidth),
-                                maxWidth = narrowedMaxWidth
-                            )
-                        )
-                        val outerWidth = constraints.maxWidth.coerceAtLeast(placeable.width)
-                        layout(outerWidth, placeable.height) {
-                            placeable.placeRelative(
-                                x = (outerWidth - placeable.width) / 2,
-                                y = 0
-                            )
-                        }
-                    }
-                    .graphicsLayer {
-                        val p = collapseProgressState.value
-                        val travel = (topRowHeightPx - extraTopGapPx).coerceAtLeast(0f)
-                        translationY = -travel * p
-                        shadowElevation = floatingShadowPx * p
-                        shape = CircleShape
-                        clip = false
-                        ambientShadowColor = ambientShadowTint
-                        spotShadowColor = spotShadowTint
-                    }
-            )
+            AnimatedVisibility(
+                visible = searchOpen,
+                enter = fadeIn(tween(180)) + expandVertically(tween(220)),
+                exit = fadeOut(tween(140)) + shrinkVertically(tween(180))
+            ) {
+                LiquidGlassSearchCapsule(
+                    query = topicQuery,
+                    placeholder = "Tìm trong $topicCount chủ đề (Marketing, Thuế...)",
+                    onQueryChange = onTopicQueryChange,
+                    hazeState = contentHazeState,
+                    floatingBlurRadius = 18.dp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(start = horizPad, end = horizPad, bottom = 12.dp)
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun DeckSwitcherPill(
-    selectedDeckName: String,
-    totalCount: Int,
-    topicCount: Int,
-    enabled: Boolean = true,
-    onClick: () -> Unit,
+private fun HomeSectionHeader(
+    title: String,
+    subtitle: String,
+    onSubtitleClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    val glassColors = LocalLiquidGlassColors.current
-    val pillFill = if (glassColors.isDark) {
-        Color.White.copy(alpha = 0.08f)
-    } else {
-        Color.White.copy(alpha = 0.68f)
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 2.dp, vertical = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.labelMedium,
+            color = if (onSubtitleClick != null) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = if (onSubtitleClick != null) {
+                Modifier
+                    .clip(CircleShape)
+                    .clickable(onClick = onSubtitleClick)
+                    .padding(horizontal = 6.dp, vertical = 2.dp)
+            } else {
+                Modifier
+            }
+        )
     }
-    val clickModifier = if (enabled) {
+}
+
+@Composable
+internal fun FlatSurfaceCard(
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit
+) {
+    val glassColors = LocalLiquidGlassColors.current
+    val flatFill = if (glassColors.isDark) {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    } else {
+        Color.White.copy(alpha = 0.84f)
+    }
+    val borderColor = if (glassColors.isDark) {
+        Color.White.copy(alpha = 0.10f)
+    } else {
+        Color(0xFF0F172A).copy(alpha = 0.08f)
+    }
+    val clickModifier = if (onClick != null) {
         Modifier.clickable(
             interactionSource = remember { MutableInteractionSource() },
             indication = ripple(bounded = true, color = MaterialTheme.colorScheme.primary),
@@ -460,89 +591,307 @@ private fun DeckSwitcherPill(
         Modifier
     }
 
+    Box(
+        modifier = modifier
+            .clip(FlatDeckCardShape)
+            .background(flatFill)
+            .border(width = 1.dp, color = borderColor, shape = FlatDeckCardShape)
+            .then(clickModifier)
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun TabletDeckFlatCard(
+    deck: DeckProgress,
+    isActive: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val glassColors = LocalLiquidGlassColors.current
+    val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
+    val progress = if (deck.totalCount > 0) {
+        (deck.learnedCount.toFloat() / deck.totalCount.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val percent = (progress * 100f).toInt()
+    val flatFill = if (isActive) {
+        MaterialTheme.colorScheme.primary.copy(alpha = if (glassColors.isDark) 0.14f else 0.09f)
+    } else if (glassColors.isDark) {
+        MaterialTheme.colorScheme.surfaceContainerLow
+    } else {
+        Color.White.copy(alpha = 0.84f)
+    }
+    val borderColor = if (isActive) {
+        MaterialTheme.colorScheme.primary
+    } else if (glassColors.isDark) {
+        Color.White.copy(alpha = 0.10f)
+    } else {
+        Color(0xFF0F172A).copy(alpha = 0.08f)
+    }
+
     Column(
         modifier = modifier
-            .clip(RoundedCornerShape(16.dp))
-            .background(pillFill)
-            .border(
-                width = if (glassColors.isDark) 0.75.dp else 1.dp,
-                brush = glassColors.defaultBorderBrush,
-                shape = RoundedCornerShape(16.dp)
+            .clip(FlatDeckCardShape)
+            .background(flatFill)
+            .border(width = if (isActive) 1.5.dp else 1.dp, color = borderColor, shape = FlatDeckCardShape)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = ripple(bounded = true, color = MaterialTheme.colorScheme.primary),
+                onClick = onClick
             )
-            .then(clickModifier)
-            .padding(horizontal = 12.dp, vertical = 7.dp),
-        verticalArrangement = Arrangement.spacedBy(1.dp)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         Row(
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = selectedDeckName,
+                text = VocabularyDecks.dashboardTitleFor(deck.deckId),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f, fill = false)
+                modifier = Modifier.weight(1f)
             )
-            Icon(
-                imageVector = Icons.Rounded.KeyboardArrowDown,
-                contentDescription = "Chuyển bộ từ vựng",
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(18.dp)
-            )
+            if (isActive) {
+                Box(
+                    modifier = Modifier
+                        .padding(start = 6.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.16f))
+                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                ) {
+                    Text(
+                        text = "Đang học",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                }
+            }
         }
-        val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
+
         Text(
-            text = "SM-2 • ${viFormatter.format(totalCount)} từ • ${viFormatter.format(topicCount)} chủ đề",
-            style = MaterialTheme.typography.labelSmall,
+            text = "${viFormatter.format(deck.topicCount)} chủ đề • ${viFormatter.format(deck.totalCount)} từ",
+            style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
-    }
-}
 
-@Composable
-private fun ThemeQuickToggleGlassButton(
-    isDark: Boolean,
-    enabled: Boolean = true,
-    onClick: () -> Unit
-) {
-    LiquidGlassIconButton(
-        onClick = onClick,
-        size = 40.dp,
-        enabled = enabled
-    ) {
-        AnimatedContent(
-            targetState = isDark,
-            transitionSpec = {
-                (fadeIn(tween(durationMillis = 180)) + scaleIn(
-                    initialScale = 0.8f,
-                    animationSpec = tween(durationMillis = 180)
-                )) togetherWith (fadeOut(tween(durationMillis = 120)) + scaleOut(
-                    targetScale = 0.8f,
-                    animationSpec = tween(durationMillis = 120)
-                ))
-            },
-            label = "quick_theme_icon_toggle"
-        ) { darkActive ->
-            Icon(
-                imageVector = if (darkActive) Icons.Rounded.DarkMode else Icons.Rounded.LightMode,
-                contentDescription = if (darkActive) {
-                    "Chế độ giao diện: Tối"
-                } else {
-                    "Chế độ giao diện: Sáng"
-                },
-                modifier = Modifier.size(20.dp)
+        LiquidGlassHairlineProgress(
+            progress = progress,
+            height = 4.dp,
+            modifier = Modifier.fillMaxWidth()
+        )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "${viFormatter.format(deck.learnedCount)}/${viFormatter.format(deck.totalCount)} từ",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = "$percent%",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondary
             )
         }
     }
 }
 
 @Composable
-private fun TopicGlassCard(
+private fun MyDeckFlatCard(
+    deck: DeckProgress,
+    isExpanded: Boolean,
+    onContinueClick: () -> Unit
+) {
+    val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
+    val progress = if (deck.totalCount > 0) {
+        (deck.learnedCount.toFloat() / deck.totalCount.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val percent = (progress * 100f).toInt()
+
+    FlatSurfaceCard(
+        onClick = onContinueClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = VocabularyDecks.dashboardTitleFor(deck.deckId),
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = VocabularyDecks.descriptionFor(deck.deckId),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+
+                Text(
+                    text = "$percent%",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
+
+            LiquidGlassHairlineProgress(
+                progress = progress,
+                height = 5.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${viFormatter.format(deck.learnedCount)} / ${viFormatter.format(deck.totalCount)} từ đã học",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = if (isExpanded) "Thu gọn bài học" else "Tiếp tục học",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.SemiBold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.ArrowForward,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun DiscoverDeckFlatCard(
+    deck: DeckProgress,
+    onClick: () -> Unit
+) {
+    val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
+    val progress = if (deck.totalCount > 0) {
+        (deck.learnedCount.toFloat() / deck.totalCount.toFloat()).coerceIn(0f, 1f)
+    } else {
+        0f
+    }
+    val percent = (progress * 100f).toInt()
+
+    FlatSurfaceCard(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = VocabularyDecks.dashboardTitleFor(deck.deckId),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(end = 8.dp)
+                )
+                Icon(
+                    imageVector = Icons.Rounded.ChevronRight,
+                    contentDescription = "Chọn bộ ${VocabularyDecks.dashboardTitleFor(deck.deckId)}",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            Text(
+                text = VocabularyDecks.descriptionFor(deck.deckId),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            LiquidGlassHairlineProgress(
+                progress = progress,
+                height = 4.dp,
+                modifier = Modifier.fillMaxWidth()
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${viFormatter.format(deck.learnedCount)} / ${viFormatter.format(deck.totalCount)} từ",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = "$percent%",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.secondary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+internal fun TopicFlatCard(
     topicProgress: TopicProgress,
     onClick: () -> Unit,
     isWide: Boolean = false,
@@ -556,16 +905,13 @@ private fun TopicGlassCard(
     }
     val visual = remember(topicProgress.topic) { topicVisualFor(topicProgress.topic) }
     val iconCircleBg = if (glassColors.isDark) {
-        Color.White.copy(alpha = 0.08f)
+        Color.White.copy(alpha = 0.06f)
     } else {
-        Color.White.copy(alpha = 0.72f)
+        MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
     }
-    val iconTint = MaterialTheme.colorScheme.primary
 
-    LiquidGlassCard(
+    FlatSurfaceCard(
         onClick = onClick,
-        pressScaleEnabled = false,
-        shape = TopicCardShape,
         modifier = modifier.fillMaxWidth()
     ) {
         Box(modifier = Modifier.fillMaxWidth()) {
@@ -573,31 +919,26 @@ private fun TopicGlassCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(
-                        start = if (isWide) 18.dp else 14.dp,
-                        end = if (isWide) 18.dp else 14.dp,
-                        top = if (isWide) 18.dp else 14.dp,
-                        bottom = if (isWide) 18.dp else 16.dp
+                        start = if (isWide) 16.dp else 14.dp,
+                        end = if (isWide) 16.dp else 14.dp,
+                        top = 13.dp,
+                        bottom = 15.dp
                     ),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Box(
                     modifier = Modifier
-                        .size(44.dp)
+                        .size(40.dp)
                         .clip(CircleShape)
-                        .background(iconCircleBg)
-                        .border(
-                            width = if (glassColors.isDark) 0.75.dp else 1.dp,
-                            brush = glassColors.defaultBorderBrush,
-                            shape = CircleShape
-                        ),
+                        .background(iconCircleBg),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = visual.icon,
                         contentDescription = null,
-                        tint = iconTint,
-                        modifier = Modifier.size(22.dp)
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(20.dp)
                     )
                 }
 
@@ -607,7 +948,8 @@ private fun TopicGlassCard(
                 ) {
                     Text(
                         text = topicProgress.topic,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis

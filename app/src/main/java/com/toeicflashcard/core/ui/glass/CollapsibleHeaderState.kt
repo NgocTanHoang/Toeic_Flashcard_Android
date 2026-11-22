@@ -19,7 +19,10 @@ val CollapsibleHeaderSpring = spring<Float>(
 
 @Stable
 class CollapsibleHeaderState(
-    private val dockScrollController: DockScrollController
+    private val dockScrollController: DockScrollController,
+    private val collapseThresholdPx: Float = 28f,
+    private val expandThresholdPx: Float = 18f,
+    private val expandOnBottomOverscroll: Boolean = true
 ) {
     var isCollapsed by mutableStateOf(false)
         private set
@@ -52,17 +55,17 @@ class CollapsibleHeaderState(
             if (dy < -1f) {
                 if (accumulatedDelta > 0f) accumulatedDelta = 0f
                 accumulatedDelta += dy
-                if (accumulatedDelta <= -28f) {
+                if (accumulatedDelta <= -collapseThresholdPx) {
                     collapse()
                 }
             } else if (dy > 1f) {
                 if (accumulatedDelta < 0f) accumulatedDelta = 0f
                 accumulatedDelta += dy
-                if (accumulatedDelta >= 18f) {
+                if (accumulatedDelta >= expandThresholdPx) {
                     expand()
                 }
             }
-            if (available.y < -4f) {
+            if (expandOnBottomOverscroll && available.y < -4f) {
                 expand()
             }
             return Offset.Zero
@@ -72,9 +75,22 @@ class CollapsibleHeaderState(
 
 @Composable
 fun rememberCollapsibleHeaderState(
-    dockScrollController: DockScrollController
+    dockScrollController: DockScrollController,
+    collapseThresholdPx: Float = 28f,
+    expandThresholdPx: Float = 18f,
+    expandOnBottomOverscroll: Boolean = true
 ): CollapsibleHeaderState {
-    return remember(dockScrollController) {
-        CollapsibleHeaderState(dockScrollController)
+    return remember(
+        dockScrollController,
+        collapseThresholdPx,
+        expandThresholdPx,
+        expandOnBottomOverscroll
+    ) {
+        CollapsibleHeaderState(
+            dockScrollController = dockScrollController,
+            collapseThresholdPx = collapseThresholdPx,
+            expandThresholdPx = expandThresholdPx,
+            expandOnBottomOverscroll = expandOnBottomOverscroll
+        )
     }
 }

@@ -45,7 +45,8 @@ fun Sm2RatingBar(
     intervalPreviews: Map<ReviewQuality, String>,
     onSelectQuality: (ReviewQuality) -> Unit,
     modifier: Modifier = Modifier,
-    isVertical: Boolean = false
+    isVertical: Boolean = false,
+    isLargeVertical: Boolean = false
 ) {
     val sm2Colors = LocalSm2RatingColors.current
     val isWide = LocalConfiguration.current.screenWidthDp.dp >= AdaptiveWideBreakpoint ||
@@ -60,7 +61,7 @@ fun Sm2RatingBar(
         if (isVertical) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                verticalArrangement = Arrangement.spacedBy(if (isLargeVertical) 14.dp else 10.dp)
             ) {
                 ReviewQuality.entries.forEach { quality ->
                     val palette = when (quality) {
@@ -76,6 +77,7 @@ fun Sm2RatingBar(
                         colors = palette,
                         onClick = { onSelectQuality(quality) },
                         isVerticalLayout = true,
+                        isLargeVertical = isLargeVertical,
                         modifier = Modifier.fillMaxWidth()
                     )
                 }
@@ -115,7 +117,8 @@ private fun Sm2GlassPillButton(
     colors: Sm2ColorPair,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isVerticalLayout: Boolean = false
+    isVerticalLayout: Boolean = false,
+    isLargeVertical: Boolean = false
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val isDark = glassColors.isDark
@@ -183,7 +186,11 @@ private fun Sm2GlassPillButton(
 
     var labelFontSizeSp by remember(label) { mutableFloatStateOf(13f) }
 
-    val pillHeight = if (isVerticalLayout) 54.dp else 64.dp
+    val pillHeight = when {
+        isVerticalLayout && isLargeVertical -> 76.dp
+        isVerticalLayout -> 54.dp
+        else -> 64.dp
+    }
 
     LiquidGlassCard(
         onClick = onClick,
@@ -203,23 +210,41 @@ private fun Sm2GlassPillButton(
             contentAlignment = Alignment.Center
         ) {
             if (isVerticalLayout) {
+                val hintSubtitle = when (quality) {
+                    ReviewQuality.AGAIN -> "Lặp lại ngay"
+                    ReviewQuality.HARD -> "Ôn sớm"
+                    ReviewQuality.GOOD -> "Đúng nhịp"
+                    ReviewQuality.EASY -> "Giãn cách dài"
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = label,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = labelColor,
-                        maxLines = 1,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis
-                    )
+                    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = labelColor,
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        if (isLargeVertical) {
+                            Text(
+                                text = hintSubtitle,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = intervalColor,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
                     Text(
                         text = intervalHint,
                         style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.SemiBold,
                         color = intervalColor,
                         maxLines = 1,
                         softWrap = false,

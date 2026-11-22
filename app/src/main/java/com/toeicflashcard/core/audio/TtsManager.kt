@@ -13,11 +13,29 @@ sealed interface TtsFeedback {
     data class Unavailable(val messageVi: String) : TtsFeedback
 }
 
+enum class TtsLanguageStatus {
+    READY,
+    MISSING_VOICE_DATA,
+    UNSUPPORTED
+}
+
+data class TtsLanguageResolution(
+    val status: TtsLanguageStatus,
+    val selectedLocale: Locale?
+)
+
+interface TtsPlayer {
+    fun warmUp()
+    fun speak(text: String, speechRate: Float = TtsManager.DEFAULT_SPEECH_RATE): TtsFeedback
+    fun stop()
+    fun shutdown()
+}
+
 class TtsManager(
     context: Context,
     private val onDeferredFeedback: ((TtsFeedback) -> Unit)? = null,
     eagerInit: Boolean = false
-) {
+) : TtsPlayer {
     private enum class State {
         IDLE,
         INITIALIZING,
@@ -47,7 +65,7 @@ class TtsManager(
     /**
      * Triggers lazy TextToSpeech engine construction off the main thread.
      */
-    fun warmUp() {
+    override fun warmUp() {
         synchronized(lock) {
             if (state != State.IDLE) return
             state = State.INITIALIZING
@@ -133,39 +151,32 @@ class TtsManager(
         }
         val readyEngine = engine ?: return
 
-        val usStatus = try {
-            readyEngine.setLanguage(Locale.US)
-        } catch (_: Exception) {
-            TextToSpeech.LANG_NOT_SUPPORTED
-        }
-
-        val resolvedStatus = if (
-            usStatus == TextToSpeech.LANG_MISSING_DATA ||
-            usStatus == TextToSpeech.LANG_NOT_SUPPORTED
-        ) {
-            try {
-                readyEngine.setLanguage(Locale.ENGLISH)
-            } catch (_: Exception) {
-                TextToSpeech.LANG_NOT_SUPPORTED
+        val resolution = resolveEnglishLanguage(
+            checkAvailability = { locale ->
+                try {
+                    readyEngine.isLanguageAvailable(locale)
+                } catch (_: Exception) {
+                    TextToSpeech.LANG_NOT_SUPPORTED
+                }
+            },
+            applyLanguage = { locale ->
+                try {
+                    readyEngine.setLanguage(locale)
+                } catch (_: Exception) {
+                    TextToSpeech.LANG_NOT_SUPPORTED
+                }
             }
-        } else {
-            usStatus
-        }
+        )
 
         val pendingToSpeak: Pair<String, Float>?
         var deferredFailure: TtsFeedback? = null
         synchronized(lock) {
             if (state == State.SHUT_DOWN) return
-            if (
-                resolvedStatus == TextToSpeech.LANG_MISSING_DATA ||
-                resolvedStatus == TextToSpeech.LANG_NOT_SUPPORTED
-            ) {
+            if (resolution.status != TtsLanguageStatus.READY) {
                 state = State.MISSING_VOICE_DATA
                 hasActiveSpeech = false
                 deferredFailure = consumePendingLocked(
-                    TtsFeedback.MissingVoiceData(
-                        "Thiết bị chưa cài gói giọng nói tiếng Anh (US). Vui lòng tải trong Cài đặt Text-to-Speech."
-                    )
+                    TtsFeedback.MissingVoiceData(MISSING_VOICE_DATA_MESSAGE_VI)
                 )
                 pendingToSpeak = null
             } else {
@@ -191,7 +202,7 @@ class TtsManager(
         }
     }
 
-    fun speak(text: String, speechRate: Float = DEFAULT_SPEECH_RATE): TtsFeedback {
+    override fun speak(text: String, speechRate: Float): TtsFeedback {
         val cleanText = text.trim()
         if (cleanText.isEmpty()) return TtsFeedback.Spoken
 
@@ -215,7 +226,7 @@ class TtsManager(
                     TtsFeedback.Initializing
                 }
                 State.MISSING_VOICE_DATA -> TtsFeedback.MissingVoiceData(
-                    "Thiết bị chưa cài gói giọng nói tiếng Anh (US). Vui lòng tải trong Cài đặt Text-to-Speech."
+                    MISSING_VOICE_DATA_MESSAGE_VI
                 )
                 State.ERROR -> TtsFeedback.Unavailable(
                     "Trình đọc giọng nói hiện không khả dụng trên thiết bị này."
@@ -286,7 +297,7 @@ class TtsManager(
         }
     }
 
-    fun stop() {
+    override fun stop() {
         val engineToStop = synchronized(lock) {
             pendingText = null
             if (!hasActiveSpeech) return
@@ -302,7 +313,7 @@ class TtsManager(
         }
     }
 
-    fun shutdown() {
+    override fun shutdown() {
         val engineToShutdown = synchronized(lock) {
             state = State.SHUT_DOWN
             pendingText = null
@@ -325,8 +336,54 @@ class TtsManager(
     companion object {
         const val DEFAULT_SPEECH_RATE = 0.95f
         const val SLOW_SPEECH_RATE = 0.75f
+        const val MISSING_VOICE_DATA_MESSAGE_VI =
+            "Thiết bị thiếu dữ liệu giọng đọc tiếng Anh (US/UK) ngoại tuyến. Vui lòng vào Cài đặt thiết bị → Chuyển văn bản thành giọng nói để tải gói tiếng Anh."
         private const val MIN_SPEECH_RATE = 0.5f
         private const val MAX_SPEECH_RATE = 1.5f
+        private val ENGLISH_LOCALE_CANDIDATES = listOf(Locale.US, Locale.UK, Locale.ENGLISH)
+
+        internal fun resolveEnglishLanguage(
+            checkAvailability: (Locale) -> Int,
+            applyLanguage: (Locale) -> Int
+        ): TtsLanguageResolution {
+            var sawMissingData = false
+            for (locale in ENGLISH_LOCALE_CANDIDATES) {
+                val availability = try {
+                    checkAvailability(locale)
+                } catch (_: Exception) {
+                    TextToSpeech.LANG_NOT_SUPPORTED
+                }
+                if (availability == TextToSpeech.LANG_MISSING_DATA) {
+                    sawMissingData = true
+                    continue
+                }
+                if (availability >= TextToSpeech.LANG_AVAILABLE) {
+                    val applied = try {
+                        applyLanguage(locale)
+                    } catch (_: Exception) {
+                        TextToSpeech.LANG_NOT_SUPPORTED
+                    }
+                    if (applied == TextToSpeech.LANG_MISSING_DATA) {
+                        sawMissingData = true
+                        continue
+                    }
+                    if (applied >= TextToSpeech.LANG_AVAILABLE) {
+                        return TtsLanguageResolution(
+                            status = TtsLanguageStatus.READY,
+                            selectedLocale = locale
+                        )
+                    }
+                }
+            }
+            return TtsLanguageResolution(
+                status = if (sawMissingData) {
+                    TtsLanguageStatus.MISSING_VOICE_DATA
+                } else {
+                    TtsLanguageStatus.UNSUPPORTED
+                },
+                selectedLocale = null
+            )
+        }
 
         private val ttsExecutor: ExecutorService = Executors.newSingleThreadExecutor { runnable ->
             Thread(runnable, "ToeicTtsWorker").apply { isDaemon = true }

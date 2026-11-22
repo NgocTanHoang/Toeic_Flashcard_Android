@@ -5,15 +5,19 @@ import com.toeicflashcard.core.audio.TtsManager
 import com.toeicflashcard.domain.model.DarkTone
 import com.toeicflashcard.domain.model.DeckProgress
 import com.toeicflashcard.domain.model.ThemeMode
+import com.toeicflashcard.domain.model.ToeicTargetLevel
 import com.toeicflashcard.domain.model.TopicProgress
 import com.toeicflashcard.domain.model.VocabularyDecks
 
 @Immutable
 data class HomeUiState(
     val isLoading: Boolean = true,
+    val preferencesLoaded: Boolean = false,
+    val hasCompletedOnboarding: Boolean = true,
+    val targetToeicLevel: String = ToeicTargetLevel.TARGET_650.id,
     val hasDatabaseWords: Boolean = false,
-    val selectedDeckId: String = VocabularyDecks.ALL_ID,
-    val selectedDeckName: String = VocabularyDecks.ALL_NAME,
+    val selectedDeckId: String = VocabularyDecks.DEFAULT_SELECTED_DECK_ID,
+    val selectedDeckName: String = VocabularyDecks.displayNameFor(VocabularyDecks.DEFAULT_SELECTED_DECK_ID),
     val decks: List<DeckProgress> = emptyList(),
     val dueTodayCount: Int = 0,
     val reviewDueCount: Int = 0,
@@ -33,5 +37,6 @@ data class HomeUiState(
     val reminderEnabled: Boolean = false,
     val reminderHour: Int = 20,
     val reminderMinute: Int = 0,
-    val glassOpacity: Float? = null
+    val glassOpacity: Float? = null,
+    val enableHapticFeedback: Boolean = false
 )

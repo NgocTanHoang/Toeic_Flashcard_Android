@@ -259,62 +259,6 @@ private fun AddVocabularySheetContent(
                 }
             }
 
-            // Segmented Switch: Nhập từ mới | Nhập file JSON
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(CircleShape)
-                    .background(pillTrackColor)
-                    .border(0.75.dp, glassColors.defaultBorderBrush, CircleShape)
-                    .padding(4.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                AddVocabTab.entries.forEach { tab ->
-                    val isSelected = selectedTab == tab
-                    val segmentBg = when {
-                        isSelected && glassColors.isDark -> Color.White.copy(alpha = 0.16f)
-                        isSelected -> MaterialTheme.colorScheme.primary.copy(alpha = 0.20f)
-                        else -> Color.Transparent
-                    }
-                    val segmentFg = when {
-                        isSelected && glassColors.isDark -> MaterialTheme.colorScheme.primary
-                        isSelected -> MaterialTheme.colorScheme.onPrimaryContainer
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .clip(CircleShape)
-                            .background(segmentBg)
-                            .then(
-                                if (isSelected) {
-                                    Modifier.border(0.8.dp, glassColors.defaultBorderBrush, CircleShape)
-                                } else {
-                                    Modifier
-                                }
-                            )
-                            .semantics {
-                                selected = isSelected
-                                contentDescription = tab.label
-                            }
-                            .clickable(role = Role.Tab) {
-                                selectedTab = tab
-                            }
-                            .padding(vertical = 9.dp),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = tab.label,
-                            style = MaterialTheme.typography.labelLarge,
-                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium,
-                            color = segmentFg,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                }
-            }
-
             AnimatedContent(
                 targetState = selectedTab,
                 transitionSpec = {
@@ -334,6 +278,31 @@ private fun AddVocabularySheetContent(
                         onImportJson = onImportJson,
                         onShowMessage = onShowMessage,
                         onDismiss = onDismiss
+                    )
+                }
+            }
+
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.TextButton(
+                    onClick = {
+                        selectedTab = if (selectedTab == AddVocabTab.MANUAL) {
+                            AddVocabTab.JSON_IMPORT
+                        } else {
+                            AddVocabTab.MANUAL
+                        }
+                    }
+                ) {
+                    Text(
+                        text = if (selectedTab == AddVocabTab.MANUAL) {
+                            "Nhập hàng loạt từ file JSON ›"
+                        } else {
+                            "‹ Quay lại nhập từng từ"
+                        },
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.primary
                     )
                 }
             }

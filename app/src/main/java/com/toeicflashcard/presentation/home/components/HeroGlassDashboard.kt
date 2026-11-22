@@ -9,8 +9,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ExperimentalLayoutApi
-import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -20,16 +18,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.CheckCircle
-import androidx.compose.material.icons.rounded.ChevronRight
 import androidx.compose.material.icons.rounded.Edit
-import androidx.compose.material.icons.rounded.LocalFireDepartment
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -43,7 +36,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -56,36 +48,25 @@ import androidx.compose.ui.window.DialogProperties
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassDialogSurface
+import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.theme.LocalLiquidGlassColors
-import com.toeicflashcard.domain.model.TopicProgress
 import com.toeicflashcard.domain.usecase.GetStudyQueueUseCase
-import com.toeicflashcard.presentation.home.topicVisualFor
 import java.text.NumberFormat
 import java.util.Locale
 
-private val HeroCardShape = RoundedCornerShape(26.dp)
-private val ShortcutRowShape = RoundedCornerShape(14.dp)
-private val DailyGoalOptions = listOf(5, 10, 20)
+private val HeroCardShape = RoundedCornerShape(24.dp)
+private val MetricTileShape = RoundedCornerShape(14.dp)
+private val DailyGoalOptions = listOf(10, 15, 20, 30)
 
-@OptIn(ExperimentalLayoutApi::class)
-@Suppress("UNUSED_PARAMETER")
 @Composable
 fun HeroGlassDashboard(
     reviewDueCount: Int,
     newWordsCount: Int,
-    learnedCount: Int,
-    totalCount: Int,
-    currentStreak: Int,
-    hasStudiedToday: Boolean,
     dailyReviewedCount: Int,
     dailyGoal: Int,
-    continueTopic: TopicProgress?,
     isWide: Boolean,
     onSelectDailyGoal: (Int) -> Unit,
     onStartDueReview: () -> Unit,
-    onSelectTopic: (String) -> Unit,
-    onOpenStandardQuiz: () -> Unit = {},
-    onOpenListeningQuiz: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var showGoalDialog by remember { mutableStateOf(false) }
@@ -97,20 +78,16 @@ fun HeroGlassDashboard(
         animationSpec = tween(durationMillis = 450, easing = FastOutSlowInEasing),
         label = "hero_goal_progress"
     )
-    val goalReached = dailyReviewedCount >= safeGoal
     val goalPercent = (goalProgress * 100f).toInt()
-    val extraWords = (dailyReviewedCount - safeGoal).coerceAtLeast(0)
+    val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
 
     val sessionLimit = GetStudyQueueUseCase.DEFAULT_DAILY_SESSION_LIMIT
     val ctaEnabled = reviewDueCount > 0 || newWordsCount > 0
     val ctaText = when {
-        reviewDueCount > 0 -> "Ôn tập đến hạn (${minOf(reviewDueCount, sessionLimit)} từ)"
-        newWordsCount > 0 -> "Học từ mới (${minOf(newWordsCount, sessionLimit)} từ)"
-        else -> "Đã hoàn thành mục tiêu hôm nay"
+        reviewDueCount > 0 -> "Bắt đầu ôn tập (${minOf(reviewDueCount, sessionLimit)} từ)"
+        newWordsCount > 0 -> "Học ${minOf(newWordsCount, sessionLimit)} từ mới"
+        else -> "Đã hoàn thành hôm nay"
     }
-    val viFormatter = remember { NumberFormat.getIntegerInstance(Locale.forLanguageTag("vi-VN")) }
-    val summaryLine =
-        "Đến hạn: ${viFormatter.format(reviewDueCount)} • Mới: ${viFormatter.format(newWordsCount)} • Thuộc: ${viFormatter.format(learnedCount)}/${viFormatter.format(totalCount)}"
 
     LiquidGlassCard(
         modifier = modifier.fillMaxWidth(),
@@ -121,62 +98,44 @@ fun HeroGlassDashboard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(22.dp),
                 horizontalArrangement = Arrangement.spacedBy(24.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Column(
-                    modifier = Modifier.weight(1.2f),
+                    modifier = Modifier.weight(1.35f),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    HeroHeaderLabel()
-
-                    HeroProgressRow(
-                        isWide = true,
-                        animatedProgress = animatedGoalProgress.value,
-                        goalReached = goalReached,
+                    DailyOverviewHeader(
                         goalPercent = goalPercent,
-                        dailyReviewedCount = dailyReviewedCount,
-                        safeGoal = safeGoal,
-                        extraWords = extraWords
+                        goalReached = dailyReviewedCount >= safeGoal
                     )
 
-                    Text(
-                        text = summaryLine,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
+                    DailyThreeMetricsRow(
+                        reviewDueCount = reviewDueCount,
+                        dailyReviewedCount = dailyReviewedCount,
+                        dailyGoal = safeGoal,
+                        viFormatter = viFormatter,
+                        onGoalClick = { showGoalDialog = true }
+                    )
+
+                    DailyProgressBar(
+                        progress = animatedGoalProgress.value,
+                        goalPercent = goalPercent
                     )
                 }
 
                 Column(
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(0.95f),
                     horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.Center
                 ) {
-                    HeroStreakGoalPill(
-                        currentStreak = currentStreak,
-                        hasStudiedToday = hasStudiedToday,
-                        dailyReviewedCount = dailyReviewedCount,
-                        safeGoal = safeGoal,
-                        onClick = { showGoalDialog = true }
-                    )
-
                     HeroPrimaryCtaButton(
                         ctaText = ctaText,
                         enabled = ctaEnabled,
                         onClick = onStartDueReview,
-                        modifier = Modifier.widthIn(min = 240.dp, max = 320.dp)
+                        modifier = Modifier.widthIn(min = 220.dp, max = 300.dp)
                     )
-
-                    if (continueTopic != null) {
-                        ContinueTopicShortcutRow(
-                            continueTopic = continueTopic,
-                            onSelectTopic = onSelectTopic,
-                            modifier = Modifier.widthIn(min = 240.dp, max = 320.dp)
-                        )
-                    }
                 }
             }
         } else {
@@ -186,37 +145,22 @@ fun HeroGlassDashboard(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
-                ) {
-                    HeroHeaderLabel(modifier = Modifier.weight(1f))
-                    HeroStreakGoalPill(
-                        currentStreak = currentStreak,
-                        hasStudiedToday = hasStudiedToday,
-                        dailyReviewedCount = dailyReviewedCount,
-                        safeGoal = safeGoal,
-                        onClick = { showGoalDialog = true }
-                    )
-                }
-
-                HeroProgressRow(
-                    isWide = false,
-                    animatedProgress = animatedGoalProgress.value,
-                    goalReached = goalReached,
+                DailyOverviewHeader(
                     goalPercent = goalPercent,
-                    dailyReviewedCount = dailyReviewedCount,
-                    safeGoal = safeGoal,
-                    extraWords = extraWords
+                    goalReached = dailyReviewedCount >= safeGoal
                 )
 
-                Text(
-                    text = summaryLine,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                DailyThreeMetricsRow(
+                    reviewDueCount = reviewDueCount,
+                    dailyReviewedCount = dailyReviewedCount,
+                    dailyGoal = safeGoal,
+                    viFormatter = viFormatter,
+                    onGoalClick = { showGoalDialog = true }
+                )
+
+                DailyProgressBar(
+                    progress = animatedGoalProgress.value,
+                    goalPercent = goalPercent
                 )
 
                 HeroPrimaryCtaButton(
@@ -224,13 +168,6 @@ fun HeroGlassDashboard(
                     enabled = ctaEnabled,
                     onClick = onStartDueReview
                 )
-
-                if (continueTopic != null) {
-                    ContinueTopicShortcutRow(
-                        continueTopic = continueTopic,
-                        onSelectTopic = onSelectTopic
-                    )
-                }
             }
         }
     }
@@ -248,200 +185,159 @@ fun HeroGlassDashboard(
 }
 
 @Composable
-private fun HeroHeaderLabel(modifier: Modifier = Modifier) {
-    Text(
-        text = "MỤC TIÊU HÔM NAY",
-        style = MaterialTheme.typography.labelSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        letterSpacing = 0.8.sp,
-        maxLines = 1,
-        overflow = TextOverflow.Ellipsis,
-        modifier = modifier
-    )
-}
-
-@Composable
-private fun HeroStreakGoalPill(
-    currentStreak: Int,
-    hasStudiedToday: Boolean,
-    dailyReviewedCount: Int,
-    safeGoal: Int,
-    onClick: () -> Unit
+private fun DailyOverviewHeader(
+    goalPercent: Int,
+    goalReached: Boolean
 ) {
-    val glassColors = LocalLiquidGlassColors.current
-    val badgeFill = if (glassColors.isDark) {
-        Color.White.copy(alpha = 0.08f)
-    } else {
-        Color.White.copy(alpha = 0.62f)
-    }
-
     Row(
-        modifier = Modifier
-            .clip(CircleShape)
-            .background(badgeFill)
-            .border(
-                width = if (glassColors.isDark) 0.75.dp else 0.8.dp,
-                brush = glassColors.defaultBorderBrush,
-                shape = CircleShape
-            )
-            .clickable(
-                role = Role.Button,
-                onClick = onClick
-            )
-            .semantics {
-                contentDescription =
-                    "Chuỗi $currentStreak ngày, mục tiêu $dailyReviewedCount trên $safeGoal từ. Chạm để đổi mục tiêu"
-            }
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Icon(
-            imageVector = Icons.Rounded.LocalFireDepartment,
-            contentDescription = null,
-            tint = if (currentStreak > 0 || hasStudiedToday) {
-                MaterialTheme.colorScheme.tertiary
-            } else {
-                MaterialTheme.colorScheme.onSurfaceVariant
-            },
-            modifier = Modifier.size(14.dp)
-        )
         Text(
-            text = "$currentStreak ngày",
+            text = "TIẾN ĐỘ HÔM NAY",
             style = MaterialTheme.typography.labelSmall,
             fontWeight = FontWeight.SemiBold,
-            color = MaterialTheme.colorScheme.onSurface
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 0.8.sp
         )
-        Icon(
-            imageVector = Icons.Rounded.Edit,
-            contentDescription = "Chỉnh mục tiêu ngày",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(12.dp)
+        Text(
+            text = if (goalReached) "Đạt mục tiêu • $goalPercent%" else "$goalPercent% mục tiêu",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+            color = if (goalReached) {
+                MaterialTheme.colorScheme.secondary
+            } else {
+                MaterialTheme.colorScheme.primary
+            }
         )
     }
 }
 
-@OptIn(ExperimentalLayoutApi::class)
 @Composable
-private fun HeroProgressRow(
-    isWide: Boolean,
-    animatedProgress: Float,
-    goalReached: Boolean,
-    goalPercent: Int,
+private fun DailyThreeMetricsRow(
+    reviewDueCount: Int,
     dailyReviewedCount: Int,
-    safeGoal: Int,
-    extraWords: Int
+    dailyGoal: Int,
+    viFormatter: NumberFormat,
+    onGoalClick: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
-    val ringSize = if (isWide) 72.dp else 64.dp
-    val ringStroke = if (isWide) 5.5.dp else 5.dp
-    val countStyle = if (isWide) {
-        MaterialTheme.typography.headlineMedium.copy(fontSize = 28.sp)
+    val tileBg = if (glassColors.isDark) {
+        Color.White.copy(alpha = 0.06f)
     } else {
-        MaterialTheme.typography.headlineMedium
+        Color.White.copy(alpha = 0.56f)
     }
 
     Row(
         modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(16.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Box(
-            modifier = Modifier.size(ringSize),
-            contentAlignment = Alignment.Center
-        ) {
-            CircularProgressIndicator(
-                progress = { animatedProgress },
-                modifier = Modifier.size(ringSize),
-                strokeWidth = ringStroke,
-                strokeCap = StrokeCap.Round,
-                color = if (goalReached) {
-                    MaterialTheme.colorScheme.secondary
-                } else {
-                    MaterialTheme.colorScheme.primary
-                },
-                trackColor = glassColors.hairlineTrack
+        OverviewMetricTile(
+            label = "Cần ôn",
+            value = viFormatter.format(reviewDueCount),
+            valueColor = if (reviewDueCount > 0) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            backgroundColor = tileBg,
+            modifier = Modifier.weight(1f)
+        )
+        OverviewMetricTile(
+            label = "Đã học",
+            value = viFormatter.format(dailyReviewedCount),
+            valueColor = MaterialTheme.colorScheme.secondary,
+            backgroundColor = tileBg,
+            modifier = Modifier.weight(1f)
+        )
+        OverviewMetricTile(
+            label = "Mục tiêu",
+            value = viFormatter.format(dailyGoal),
+            valueColor = MaterialTheme.colorScheme.onSurface,
+            backgroundColor = tileBg,
+            editable = true,
+            onClick = onGoalClick,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun OverviewMetricTile(
+    label: String,
+    value: String,
+    valueColor: Color,
+    backgroundColor: Color,
+    editable: Boolean = false,
+    onClick: (() -> Unit)? = null,
+    modifier: Modifier = Modifier
+) {
+    val glassColors = LocalLiquidGlassColors.current
+    val clickModifier = if (onClick != null) {
+        Modifier
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics {
+                contentDescription = "$label $value. Chạm để chỉnh mục tiêu"
+            }
+    } else {
+        Modifier
+    }
+
+    Column(
+        modifier = modifier
+            .clip(MetricTileShape)
+            .background(backgroundColor)
+            .border(
+                width = 0.75.dp,
+                brush = glassColors.defaultBorderBrush,
+                shape = MetricTileShape
             )
-            if (goalReached) {
-                Icon(
-                    imageVector = Icons.Rounded.Check,
-                    contentDescription = "Đạt mục tiêu hôm nay",
-                    tint = MaterialTheme.colorScheme.secondary,
-                    modifier = Modifier.size(if (isWide) 28.dp else 26.dp)
-                )
-            } else {
-                Text(
-                    text = "$goalPercent%",
-                    style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-        }
-
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            .then(clickModifier)
+            .padding(horizontal = 10.dp, vertical = 10.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        Text(
+            text = value,
+            style = MaterialTheme.typography.titleLarge,
+            fontWeight = FontWeight.Bold,
+            color = valueColor,
+            maxLines = 1
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
-            FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                Row(
-                    modifier = Modifier.align(Alignment.CenterVertically),
-                    verticalAlignment = Alignment.Bottom,
-                    horizontalArrangement = Arrangement.spacedBy(5.dp)
-                ) {
-                    Text(
-                        text = "$dailyReviewedCount / $safeGoal",
-                        style = countStyle,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                    Text(
-                        text = "từ",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(bottom = 3.dp)
-                    )
-                }
-
-                if (goalReached) {
-                    val badgeText = if (extraWords > 0) {
-                        "Vượt chỉ tiêu +$extraWords"
-                    } else {
-                        "Hoàn thành"
-                    }
-                    Box(
-                        modifier = Modifier
-                            .align(Alignment.CenterVertically)
-                            .clip(CircleShape)
-                            .background(
-                                MaterialTheme.colorScheme.secondary.copy(
-                                    alpha = if (glassColors.isDark) 0.18f else 0.14f
-                                )
-                            )
-                            .border(
-                                width = 0.75.dp,
-                                color = MaterialTheme.colorScheme.secondary.copy(
-                                    alpha = if (glassColors.isDark) 0.42f else 0.50f
-                                ),
-                                shape = CircleShape
-                            )
-                            .padding(horizontal = 9.dp, vertical = 3.dp)
-                    ) {
-                        Text(
-                            text = badgeText,
-                            style = MaterialTheme.typography.labelSmall,
-                            fontWeight = FontWeight.SemiBold,
-                            color = MaterialTheme.colorScheme.secondary,
-                            maxLines = 1
-                        )
-                    }
-                }
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
+            )
+            if (editable) {
+                Icon(
+                    imageVector = Icons.Rounded.Edit,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(11.dp)
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun DailyProgressBar(
+    progress: Float,
+    goalPercent: Int
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        LiquidGlassHairlineProgress(
+            progress = progress,
+            height = 6.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .semantics {
+                    contentDescription = "Tiến độ mục tiêu hôm nay $goalPercent phần trăm"
+                }
+        )
     }
 }
 
@@ -492,61 +388,6 @@ private fun HeroPrimaryCtaButton(
             fontWeight = FontWeight.SemiBold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
-        )
-    }
-}
-
-@Composable
-private fun ContinueTopicShortcutRow(
-    continueTopic: TopicProgress,
-    onSelectTopic: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    val glassColors = LocalLiquidGlassColors.current
-    val visual = remember(continueTopic.topic) { topicVisualFor(continueTopic.topic) }
-    val shortcutFill = if (glassColors.isDark) {
-        Color.White.copy(alpha = 0.06f)
-    } else {
-        Color.White.copy(alpha = 0.50f)
-    }
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .clip(ShortcutRowShape)
-            .background(shortcutFill)
-            .border(
-                width = if (glassColors.isDark) 0.75.dp else 0.9.dp,
-                brush = glassColors.defaultBorderBrush,
-                shape = ShortcutRowShape
-            )
-            .clickable(
-                role = Role.Button,
-                onClick = { onSelectTopic(continueTopic.topic) }
-            )
-            .padding(horizontal = 12.dp, vertical = 9.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        Icon(
-            imageVector = visual.icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(16.dp)
-        )
-        Text(
-            text = "Tiếp tục: ${continueTopic.topic} (${continueTopic.learnedCount}/${continueTopic.totalCount})",
-            style = MaterialTheme.typography.labelMedium,
-            fontWeight = FontWeight.Medium,
-            color = MaterialTheme.colorScheme.onSurface,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.Rounded.ChevronRight,
-            contentDescription = "Học tiếp ${continueTopic.topic}",
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp)
         )
     }
 }

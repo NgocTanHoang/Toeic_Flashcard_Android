@@ -45,6 +45,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.KeyboardArrowDown
+import androidx.compose.material.icons.rounded.KeyboardArrowUp
 import androidx.compose.material.icons.rounded.NotificationsActive
 import androidx.compose.material.icons.rounded.Opacity
 import androidx.compose.material.icons.rounded.Palette
@@ -52,6 +54,7 @@ import androidx.compose.material.icons.rounded.RestartAlt
 import androidx.compose.material.icons.rounded.Schedule
 import androidx.compose.material.icons.rounded.SystemUpdate
 import androidx.compose.material.icons.rounded.Tune
+import androidx.compose.material.icons.rounded.Vibration
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -64,6 +67,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -71,6 +75,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -128,11 +135,13 @@ fun ReminderSettingsSheet(
     reminderEnabled: Boolean,
     reminderHour: Int,
     reminderMinute: Int,
+    enableHapticFeedback: Boolean = false,
     onSelectThemeMode: (ThemeMode) -> Unit,
     onSelectDarkTone: (DarkTone) -> Unit,
     onPreviewGlassOpacity: (Float) -> Unit,
     onCommitGlassOpacity: (Float) -> Unit,
     onResetGlassOpacity: () -> Unit,
+    onSetHapticFeedback: (Boolean) -> Unit = {},
     onDismiss: () -> Unit,
     onSaveReminderSettings: (enabled: Boolean, hour: Int, minute: Int) -> Unit
 ) {
@@ -182,11 +191,13 @@ fun ReminderSettingsSheet(
                 reminderEnabled = reminderEnabled,
                 reminderHour = reminderHour,
                 reminderMinute = reminderMinute,
+                enableHapticFeedback = enableHapticFeedback,
                 onSelectThemeMode = onSelectThemeMode,
                 onSelectDarkTone = onSelectDarkTone,
                 onPreviewGlassOpacity = onPreviewGlassOpacity,
                 onCommitGlassOpacity = onCommitGlassOpacity,
                 onResetGlassOpacity = onResetGlassOpacity,
+                onSetHapticFeedback = onSetHapticFeedback,
                 onOpenTimePicker = { showTimePickerDialog = true },
                 onDismiss = onDismiss,
                 onSaveReminderSettings = onSaveReminderSettings
@@ -213,16 +224,19 @@ private fun ReminderSettingsSheetContent(
     reminderEnabled: Boolean,
     reminderHour: Int,
     reminderMinute: Int,
+    enableHapticFeedback: Boolean,
     onSelectThemeMode: (ThemeMode) -> Unit,
     onSelectDarkTone: (DarkTone) -> Unit,
     onPreviewGlassOpacity: (Float) -> Unit,
     onCommitGlassOpacity: (Float) -> Unit,
     onResetGlassOpacity: () -> Unit,
+    onSetHapticFeedback: (Boolean) -> Unit,
     onOpenTimePicker: () -> Unit,
     onDismiss: () -> Unit,
     onSaveReminderSettings: (enabled: Boolean, hour: Int, minute: Int) -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
@@ -230,6 +244,20 @@ private fun ReminderSettingsSheetContent(
     var permissionDeniedNotice by remember { mutableStateOf(false) }
     var isCheckingUpdate by remember { mutableStateOf(false) }
     var updateCheckResult by remember { mutableStateOf<UpdateCheckResult?>(null) }
+
+    DisposableEffect(lifecycleOwner, context) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME &&
+                ReminderNotificationHelper.hasNotificationPermission(context)
+            ) {
+                permissionDeniedNotice = false
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
 
     var sliderValue by remember { mutableFloatStateOf(glassOpacity) }
     var isDraggingSlider by remember { mutableStateOf(false) }
@@ -312,125 +340,74 @@ private fun ReminderSettingsSheetContent(
                 )
             }
 
-            // Section 1: Theme Mode & 7 Dark Presets
+            // Section 1: Theme Mode + Collapsible Advanced Appearance (7 Dark Presets & Glass Opacity)
             AppearanceSettingsCard(
                 themeMode = themeMode,
                 darkTone = darkTone,
+                sliderValue = sliderValue,
+                defaultOpacity = defaultOpacity,
                 containerColor = rowGlassFill,
                 onSelectThemeMode = onSelectThemeMode,
-                onSelectDarkTone = onSelectDarkTone
+                onSelectDarkTone = onSelectDarkTone,
+                onPreviewGlassOpacity = { next ->
+                    isDraggingSlider = true
+                    sliderValue = next
+                    onPreviewGlassOpacity(next)
+                },
+                onCommitGlassOpacity = {
+                    isDraggingSlider = false
+                    onCommitGlassOpacity(sliderValue)
+                },
+                onResetGlassOpacity = {
+                    isDraggingSlider = false
+                    sliderValue = defaultOpacity
+                    onResetGlassOpacity()
+                }
             )
 
-            // Section 2: Real-time Glass Opacity Customization
+            // Section 2b: Haptic Feedback Toggle
             LiquidGlassCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = SheetRowCardShape,
                 containerColor = rowGlassFill
             ) {
-                Column(
+                Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 14.dp),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                        .padding(horizontal = 16.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
                     Row(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        Row(
-                            modifier = Modifier.weight(1f),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.Opacity,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(18.dp)
-                            )
+                        Icon(
+                            imageVector = Icons.Rounded.Vibration,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                             Text(
-                                text = "Độ đục kính",
+                                text = "Phản hồi rung",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.SemiBold,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "${(sliderValue * 100f).roundToInt()}%",
-                                style = MaterialTheme.typography.labelLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                        }
-
-                        LiquidGlassButton(
-                            onClick = {
-                                isDraggingSlider = false
-                                sliderValue = defaultOpacity
-                                onResetGlassOpacity()
-                            },
-                            tintColor = if (glassColors.isDark) {
-                                Color.White.copy(alpha = 0.10f)
-                            } else {
-                                MaterialTheme.colorScheme.primary.copy(alpha = 0.16f)
-                            },
-                            contentColor = if (glassColors.isDark) {
-                                MaterialTheme.colorScheme.onSurface
-                            } else {
-                                MaterialTheme.colorScheme.onPrimaryContainer
-                            },
-                            borderColor = if (glassColors.isDark) null else MaterialTheme.colorScheme.primary,
-                            contentPadding = PaddingValues(horizontal = 10.dp, vertical = 5.dp),
-                            modifier = Modifier.heightIn(min = 32.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Rounded.RestartAlt,
-                                contentDescription = null,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = "Mặc định",
-                                style = MaterialTheme.typography.labelMedium
+                                text = "Rung nhẹ khi lật thẻ và đánh giá từ vựng",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
-
-                    Slider(
-                        value = sliderValue,
-                        onValueChange = { next ->
-                            isDraggingSlider = true
-                            sliderValue = next
-                            onPreviewGlassOpacity(next)
-                        },
-                        onValueChangeFinished = {
-                            isDraggingSlider = false
-                            onCommitGlassOpacity(sliderValue)
-                        },
-                        valueRange = UserPreferences.MIN_GLASS_OPACITY..UserPreferences.MAX_GLASS_OPACITY,
-                        colors = SliderDefaults.colors(
-                            thumbColor = MaterialTheme.colorScheme.primary,
-                            activeTrackColor = MaterialTheme.colorScheme.primary,
-                            inactiveTrackColor = glassColors.hairlineTrack
-                        ),
-                        modifier = Modifier.fillMaxWidth()
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Switch(
+                        checked = enableHapticFeedback,
+                        onCheckedChange = onSetHapticFeedback
                     )
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
-                        Text(
-                            text = "45%",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        Text(
-                            text = "95%",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 }
             }
 
@@ -623,14 +600,23 @@ private fun ReminderSettingsSheetContent(
                                 tint = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.size(18.dp)
                             )
-                            Text(
-                                text = "Phiên bản v${BuildConfig.VERSION_NAME} • Kiểm tra cập nhật",
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
+                                Text(
+                                    text = "Lexora v${BuildConfig.VERSION_NAME} • Kiểm tra cập nhật",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                                Text(
+                                    text = "TOEIC Vocabulary • SM-2",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
                         }
                         if (isCheckingUpdate) {
                             Spacer(modifier = Modifier.width(10.dp))
@@ -693,11 +679,17 @@ private fun ReminderSettingsSheetContent(
 private fun AppearanceSettingsCard(
     themeMode: ThemeMode,
     darkTone: DarkTone,
+    sliderValue: Float,
+    defaultOpacity: Float,
     containerColor: Color,
     onSelectThemeMode: (ThemeMode) -> Unit,
-    onSelectDarkTone: (DarkTone) -> Unit
+    onSelectDarkTone: (DarkTone) -> Unit,
+    onPreviewGlassOpacity: (Float) -> Unit,
+    onCommitGlassOpacity: () -> Unit,
+    onResetGlassOpacity: () -> Unit
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    var showAdvancedAppearance by remember { mutableStateOf(false) }
     val pillTrackColor = if (glassColors.isDark) {
         Color.White.copy(alpha = 0.06f)
     } else {
@@ -790,21 +782,104 @@ private fun AppearanceSettingsCard(
                 }
             }
 
-            // Row 2: 7 Dark Mode Theme Swatch Pills with full end contentPadding
-            LazyRow(
-                modifier = Modifier.fillMaxWidth(),
-                contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            // Progressive disclosure toggle for 7 DarkTone presets + Glass Opacity slider
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { showAdvancedAppearance = !showAdvancedAppearance }
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                items(
-                    items = DarkTone.entries,
-                    key = { it.id }
-                ) { tone ->
-                    DarkThemeSwatchPill(
-                        tone = tone,
-                        isSelected = darkTone == tone,
-                        onClick = { onSelectDarkTone(tone) }
-                    )
+                Text(
+                    text = "Tùy chỉnh giao diện nâng cao",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Icon(
+                    imageVector = if (showAdvancedAppearance) {
+                        Icons.Rounded.KeyboardArrowUp
+                    } else {
+                        Icons.Rounded.KeyboardArrowDown
+                    },
+                    contentDescription = "Mở rộng tùy chỉnh giao diện nâng cao",
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            AnimatedVisibility(visible = showAdvancedAppearance) {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(start = 16.dp, end = 24.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(
+                            items = DarkTone.entries,
+                            key = { it.id }
+                        ) { tone ->
+                            DarkThemeSwatchPill(
+                                tone = tone,
+                                isSelected = darkTone == tone,
+                                onClick = { onSelectDarkTone(tone) }
+                            )
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Rounded.Opacity,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Độ đục kính: ${(sliderValue * 100f).roundToInt()}%",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                            }
+                            TextButton(
+                                onClick = onResetGlassOpacity,
+                                contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)
+                            ) {
+                                Text("Mặc định", style = MaterialTheme.typography.labelMedium)
+                            }
+                        }
+
+                        Slider(
+                            value = sliderValue,
+                            onValueChange = onPreviewGlassOpacity,
+                            onValueChangeFinished = onCommitGlassOpacity,
+                            valueRange = UserPreferences.MIN_GLASS_OPACITY..UserPreferences.MAX_GLASS_OPACITY,
+                            colors = SliderDefaults.colors(
+                                thumbColor = MaterialTheme.colorScheme.primary,
+                                activeTrackColor = MaterialTheme.colorScheme.primary,
+                                inactiveTrackColor = glassColors.hairlineTrack
+                            ),
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
         }

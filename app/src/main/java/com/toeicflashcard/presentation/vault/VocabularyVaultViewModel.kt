@@ -27,18 +27,21 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 enum class VaultFilter(val label: String) {
     ALL("Tất cả"),
     FORGOTTEN("Hay quên"),
     LEARNING("Đang học"),
-    LEARNED("Đã thuộc")
+    LEARNED("Đã thuộc"),
+    STARRED("Đánh dấu sao")
 }
 
 @Immutable
 data class VocabularyVaultUiState(
     val isLoading: Boolean = true,
     val words: List<VocabularyWord> = emptyList(),
+    val allScopedWords: List<VocabularyWord> = emptyList(),
     val totalCount: Int = 0,
     val counts: Map<VaultFilter, Int> = emptyMap(),
     val selectedFilter: VaultFilter = VaultFilter.ALL,
@@ -48,7 +51,7 @@ data class VocabularyVaultUiState(
 )
 
 class VocabularyVaultViewModel(
-    vocabularyRepository: VocabularyRepository,
+    private val vocabularyRepository: VocabularyRepository,
     userPreferencesRepository: UserPreferencesRepository,
     createTtsManager: ((TtsFeedback) -> Unit) -> TtsManager?,
     defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
@@ -83,16 +86,19 @@ class VocabularyVaultViewModel(
         var forgottenCount = 0
         var learningCount = 0
         var learnedCount = 0
+        var starredCount = 0
         deckScopedWords.forEach { word ->
             if (isForgotten(word)) forgottenCount++
             if (word.isLearned) learnedCount++ else learningCount++
+            if (word.isStarred) starredCount++
         }
 
         val counts = mapOf(
             VaultFilter.ALL to deckScopedWords.size,
             VaultFilter.FORGOTTEN to forgottenCount,
             VaultFilter.LEARNING to learningCount,
-            VaultFilter.LEARNED to learnedCount
+            VaultFilter.LEARNED to learnedCount,
+            VaultFilter.STARRED to starredCount
         )
 
         val trimmed = query.trim()
@@ -102,6 +108,7 @@ class VocabularyVaultViewModel(
                 VaultFilter.FORGOTTEN -> isForgotten(word)
                 VaultFilter.LEARNING -> !word.isLearned
                 VaultFilter.LEARNED -> word.isLearned
+                VaultFilter.STARRED -> word.isStarred
             }
             if (!matchesFilter) return@filter false
             if (trimmed.isEmpty()) return@filter true
@@ -115,6 +122,7 @@ class VocabularyVaultViewModel(
         VocabularyVaultUiState(
             isLoading = allWords.isEmpty(),
             words = filteredWords,
+            allScopedWords = deckScopedWords,
             totalCount = deckScopedWords.size,
             counts = counts,
             selectedFilter = filter,
@@ -142,6 +150,31 @@ class VocabularyVaultViewModel(
     fun speakWord(word: String) {
         val feedback = ttsManager?.speak(word, uiState.value.speechRate) ?: return
         emitTtsFeedbackIfError(feedback)
+    }
+
+    fun speakWordAtRate(word: String, rate: Float) {
+        val feedback = ttsManager?.speak(word, rate) ?: return
+        emitTtsFeedbackIfError(feedback)
+    }
+
+    fun toggleStarred(word: VocabularyWord) {
+        viewModelScope.launch {
+            vocabularyRepository.setWordStarred(word, !word.isStarred)
+        }
+    }
+
+    fun resetWordProgress(word: VocabularyWord) {
+        viewModelScope.launch {
+            vocabularyRepository.resetWordSm2Progress(word)
+        }
+    }
+
+    suspend fun updateCustomWord(word: VocabularyWord): Boolean {
+        return vocabularyRepository.updateCustomWord(word)
+    }
+
+    suspend fun deleteCustomWord(wordId: Int): Boolean {
+        return vocabularyRepository.deleteCustomWord(wordId)
     }
 
     fun stopSpeaking() {

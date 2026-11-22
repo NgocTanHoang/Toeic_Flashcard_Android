@@ -10,9 +10,13 @@ interface UserPreferencesRepository {
     val userPreferences: Flow<UserPreferences>
     fun getCachedSpeechRate(): Float? = null
     fun getCachedSelectedDeckId(): String? = null
+    fun getCachedAutoPlayTts(): Boolean? = null
+    fun getCachedHapticEnabled(): Boolean? = null
     suspend fun setThemeMode(mode: ThemeMode)
     suspend fun setDarkTone(tone: DarkTone, forceDarkMode: Boolean = false)
     suspend fun setSpeechRate(rate: Float)
+    suspend fun setAutoPlayTts(enabled: Boolean)
+    suspend fun setEnableHapticFeedback(enabled: Boolean)
     suspend fun setDailyGoal(goal: Int)
     suspend fun setSelectedDeckId(deckId: String)
     suspend fun recordStudyReview(todayEpochDay: Long, calculator: StreakCalculator)
@@ -20,4 +24,5 @@ interface UserPreferencesRepository {
     fun previewGlassOpacity(opacity: Float?)
     suspend fun setGlassOpacity(opacity: Float)
     suspend fun resetGlassOpacity()
+    suspend fun completeOnboarding(dailyGoal: Int? = null, targetToeicLevel: String? = null) {}
 }

@@ -10,9 +10,11 @@ import com.toeicflashcard.core.ui.glass.WideQuizContentMaxWidth
 import com.toeicflashcard.core.ui.glass.WideStudyContentMaxWidth
 import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
 import com.toeicflashcard.core.ui.glass.cardInnerPadding
+import com.toeicflashcard.core.ui.glass.computeDockHideOffsetPx
 import com.toeicflashcard.core.ui.glass.gridItemSpacing
 import com.toeicflashcard.core.ui.glass.screenHorizontalPadding
 import com.toeicflashcard.core.ui.glass.sectionVerticalSpacing
+import com.toeicflashcard.presentation.study.components.computeFlashcardLayoutMetrics
 import com.toeicflashcard.domain.model.DarkTone
 import com.toeicflashcard.domain.model.ReviewQuality
 import com.toeicflashcard.domain.model.ThemeMode
@@ -86,7 +88,20 @@ class SystemFlowAndAdaptiveUiTest {
         }
 
         override suspend fun updateWord(word: VocabularyWord) {
-            state.value = state.value.map { if (it.id == word.id) word else it }
+            val normalizedKey = VocabularyDecks.normalizeWordKey(word.word)
+            state.value = state.value.map { existing ->
+                if (existing.id == word.id || VocabularyDecks.normalizeWordKey(existing.word) == normalizedKey) {
+                    existing.copy(
+                        repetitions = word.repetitions,
+                        intervalDays = word.intervalDays,
+                        easeFactor = word.easeFactor,
+                        nextReviewTimestamp = word.nextReviewTimestamp,
+                        lastReviewedTimestamp = word.lastReviewedTimestamp
+                    )
+                } else {
+                    existing
+                }
+            }
         }
 
         override suspend fun markWordsForUrgentReview(wordIds: List<Int>, nowMillis: Long) {
@@ -120,6 +135,14 @@ class SystemFlowAndAdaptiveUiTest {
 
         override suspend fun setSpeechRate(rate: Float) {
             state.value = state.value.copy(speechRate = rate)
+        }
+
+        override suspend fun setAutoPlayTts(enabled: Boolean) {
+            state.value = state.value.copy(autoPlayTts = enabled)
+        }
+
+        override suspend fun setEnableHapticFeedback(enabled: Boolean) {
+            state.value = state.value.copy(enableHapticFeedback = enabled)
         }
 
         override suspend fun setDailyGoal(goal: Int) {
@@ -370,9 +393,82 @@ class SystemFlowAndAdaptiveUiTest {
         }
 
         // Verify wide Study & Quiz content max widths exceed compact widths
-        assertTrue(WideStudyContentMaxWidth > 560.dp)
+        assertEquals(740.dp, WideStudyContentMaxWidth)
         assertTrue(WideQuizContentMaxWidth > 580.dp)
         assertNotNull(MainContentMaxWidth)
+    }
+
+    @Test
+    fun `dock hide offset includes navigation bar inset and flashcard adapts to short Z Fold 8 cover`() {
+        // Tablet portrait with 48dp navigation/taskbar inset -> dock must slide completely off-screen
+        val offsetPx = computeDockHideOffsetPx(
+            dockHeightPx = 180,
+            navBarBottomPx = 96f,
+            extraClearancePx = 72f
+        )
+        assertEquals(348f, offsetPx, 0.01f)
+        assertTrue(offsetPx >= 180f + 96f + 72f)
+
+        // Galaxy Z Fold 8 Cover 5.5" (1248x1972 @ 420dpi -> ~475.4dp x 751.2dp)
+        val fold8CoverW = (1248f / (420f / 160f)).dp
+        val fold8CoverH = (1972f / (420f / 160f)).dp
+        val fold8Metrics = computeFlashcardLayoutMetrics(fold8CoverW, fold8CoverH)
+        assertFalse(fold8Metrics.isWide)
+        assertTrue(fold8Metrics.isShortHeight)
+        assertEquals(20.dp, fold8Metrics.horizontalPadding)
+        assertEquals(14.dp, fold8Metrics.verticalPadding)
+        assertEquals(12.dp, fold8Metrics.sectionSpacing)
+        assertEquals(14.dp, fold8Metrics.exampleInnerPadding)
+
+        // OPPO Pad SE portrait (1600x2240 @ 280dpi -> ~914.3dp x 1280dp)
+        val oppoW = (1600f / (280f / 160f)).dp
+        val oppoH = (2240f / (280f / 160f)).dp
+        val oppoMetrics = computeFlashcardLayoutMetrics(oppoW, oppoH)
+        assertTrue(oppoMetrics.isWide)
+        assertFalse(oppoMetrics.isShortHeight)
+        assertEquals(28.dp, oppoMetrics.horizontalPadding)
+        assertEquals(28.dp, oppoMetrics.verticalPadding)
+    }
+
+    @Test
+    fun `cross-deck SM-2 sync deduplicates duplicate words and default deck filters Home topics`() = runTest {
+        val nowMillis = 1_700_000_000_000L
+        val timeProvider = MutableTimeProvider(currentMillis = nowMillis, currentEpochDay = 100L)
+        val duplicateWordEss = sampleWord(1001, "L01 • Contracts", VocabularyDecks.ESSENTIAL_600_ID)
+            .copy(word = "agenda")
+        val duplicateWordCore = sampleWord(1, "Business & Office", VocabularyDecks.CORE_775_ID)
+            .copy(word = " Agenda ")
+        val uniqueWordCore = sampleWord(2, "Business & Office", VocabularyDecks.CORE_775_ID)
+            .copy(word = "budget")
+
+        val vocabRepo = InMemoryVocabularyRepository(
+            listOf(duplicateWordEss, duplicateWordCore, uniqueWordCore)
+        )
+        val prefsRepo = InMemoryUserPreferencesRepository()
+        val observeHome = ObserveHomeSummaryUseCase(vocabRepo, timeProvider, Dispatchers.Unconfined)
+        val getStudyQueue = GetStudyQueueUseCase(vocabRepo, timeProvider)
+        val submitReview = SubmitReviewUseCase(vocabRepo, prefsRepo, Sm2Scheduler(), StreakCalculator(), timeProvider)
+
+        // Default deck is ESSENTIAL_600_ID -> only 1 topic (L01 • Contracts), not all topics
+        val defaultSummary = observeHome().first()
+        assertEquals(VocabularyDecks.ESSENTIAL_600_ID, defaultSummary.selectedDeckId)
+        assertEquals(listOf("L01 • Contracts"), defaultSummary.topics.map { it.topic })
+        assertEquals(15, GetStudyQueueUseCase.DEFAULT_DAILY_SESSION_LIMIT)
+
+        // Before studying, ALL queue deduplicates "agenda" and returns 2 unique words (agenda + budget)
+        val initialAllQueue = getStudyQueue(topic = null, hardWordsOnly = false, deckId = VocabularyDecks.ALL_ID)
+        assertEquals(2, initialAllQueue.words.size)
+
+        // Study "agenda" in ESSENTIAL_600_ID -> CORE_775_ID's "agenda" syncs SM-2 automatically
+        submitReview(duplicateWordEss, ReviewQuality.GOOD)
+        val syncedCoreAgenda = vocabRepo.getAllWords().first { it.id == 1 }
+        assertTrue(syncedCoreAgenda.isLearned)
+        assertEquals(1, syncedCoreAgenda.repetitions)
+        assertEquals(1, syncedCoreAgenda.intervalDays)
+
+        // CORE_775_ID due queue now only surfaces "budget" (not the already-learned "agenda")
+        val coreDueQueue = getStudyQueue(topic = null, hardWordsOnly = false, deckId = VocabularyDecks.CORE_775_ID)
+        assertEquals(listOf("budget"), coreDueQueue.words.map { it.word })
     }
 
     companion object {

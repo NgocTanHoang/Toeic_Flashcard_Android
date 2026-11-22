@@ -9,6 +9,35 @@ enum class ThemeMode {
     DARK
 }
 
+enum class ToeicTargetLevel(
+    val id: String,
+    val label: String,
+    val recommendationVi: String
+) {
+    TARGET_500(
+        id = "500+",
+        label = "500+",
+        recommendationVi = "Gợi ý: Bắt đầu với 600 Từ Cốt Lõi để nắm chắc nền tảng."
+    ),
+    TARGET_650(
+        id = "650+",
+        label = "650+",
+        recommendationVi = "Gợi ý: Học xong 600 Từ Cốt Lõi rồi mở rộng sang 775 Từ Mở Rộng."
+    ),
+    TARGET_800(
+        id = "800+",
+        label = "800+",
+        recommendationVi = "Gợi ý: Kết hợp 600 Từ Cốt Lõi và chinh phục 800 Từ Nâng Cao."
+    );
+
+    companion object {
+        fun fromId(id: String?): ToeicTargetLevel {
+            if (id == null) return TARGET_650
+            return entries.firstOrNull { it.id == id || it.name == id } ?: TARGET_650
+        }
+    }
+}
+
 enum class DarkTone(
     val id: String,
     val label: String,
@@ -134,7 +163,11 @@ data class UserPreferences(
     val reminderMinute: Int = 0,
     val glassOpacity: Float? = null,
     val dailyReviewHistory: Map<Long, Int> = emptyMap(),
-    val selectedDeckId: String = VocabularyDecks.ALL_ID
+    val selectedDeckId: String = VocabularyDecks.DEFAULT_SELECTED_DECK_ID,
+    val autoPlayTts: Boolean = true,
+    val enableHapticFeedback: Boolean = false,
+    val hasCompletedOnboarding: Boolean = false,
+    val targetToeicLevel: String = ToeicTargetLevel.TARGET_650.id
 ) {
     fun toStreakState(): StreakState = StreakState(
         currentStreak = currentStreak,

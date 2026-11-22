@@ -9,12 +9,16 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import com.toeicflashcard.ToeicApplication
 import com.toeicflashcard.core.audio.TtsFeedback
 import com.toeicflashcard.core.audio.TtsManager
+import com.toeicflashcard.core.audio.TtsPlayer
 import com.toeicflashcard.core.time.TimeProvider
 import com.toeicflashcard.domain.model.ReviewQuality
 import com.toeicflashcard.domain.model.VocabularyDecks
+import com.toeicflashcard.domain.model.VocabularyWord
 import com.toeicflashcard.domain.repository.UserPreferencesRepository
 import com.toeicflashcard.domain.scheduler.Sm2Scheduler
+import com.toeicflashcard.domain.streak.StreakCalculator
 import com.toeicflashcard.domain.usecase.GetStudyQueueUseCase
+import com.toeicflashcard.domain.usecase.StudyQueueResult
 import com.toeicflashcard.domain.usecase.SubmitReviewUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -35,9 +39,10 @@ class StudyViewModel(
     private val getStudyQueueUseCase: GetStudyQueueUseCase,
     private val submitReviewUseCase: SubmitReviewUseCase,
     private val sm2Scheduler: Sm2Scheduler,
+    private val streakCalculator: StreakCalculator,
     private val timeProvider: TimeProvider,
     private val userPreferencesRepository: UserPreferencesRepository,
-    createTtsManager: ((TtsFeedback) -> Unit) -> TtsManager
+    createTtsPlayer: ((TtsFeedback) -> Unit) -> TtsPlayer
 ) : ViewModel() {
 
     private fun resolvedSessionTitle(): String {
@@ -59,49 +64,92 @@ class StudyViewModel(
         deckId = deckId
     )
     private val cachedSpeechRate = userPreferencesRepository.getCachedSpeechRate()
+    private val cachedAutoPlayTts = userPreferencesRepository.getCachedAutoPlayTts()
+    private val cachedHapticEnabled = userPreferencesRepository.getCachedHapticEnabled()
 
     private val _uiState = MutableStateFlow(
-        buildInitialUiState(initialQueue = initialCachedQueue, cachedRate = cachedSpeechRate)
+        buildInitialUiState(
+            initialQueue = initialCachedQueue,
+            cachedRate = cachedSpeechRate,
+            cachedAutoPlay = cachedAutoPlayTts,
+            cachedHaptic = cachedHapticEnabled
+        )
     )
     val uiState: StateFlow<StudyUiState> = _uiState.asStateFlow()
 
     private val _ttsMessages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val ttsMessages: SharedFlow<String> = _ttsMessages.asSharedFlow()
 
-    private val ttsManager: TtsManager = createTtsManager { feedback ->
+    private val ttsPlayer: TtsPlayer = createTtsPlayer { feedback ->
         emitTtsFeedbackIfError(feedback)
     }
 
     private val requeuedIds = mutableSetOf<Int>()
+    private var initialNewWordIds = initialCachedQueue?.words
+        ?.filter { it.repetitions == 0 }
+        ?.map { it.id }
+        ?.toSet()
+        .orEmpty()
+    private val evaluatedWordIds = mutableSetOf<Int>()
     private var isSubmitting = false
     private var lastFlipElapsedMs = 0L
+    private var isScreenActive = true
+    private var lastAutoPlayedCardInstanceKey: Int? = null
 
     init {
+        observePreferences()
         if (initialCachedQueue == null) {
             loadSession()
         } else {
-            if (cachedSpeechRate == null) {
+            if (initialCachedQueue.words.isEmpty()) {
                 viewModelScope.launch {
-                    val rate = userPreferencesRepository.userPreferences.first().speechRate
-                    _uiState.update { it.copy(speechRate = rate) }
+                    val remaining = getStudyQueueUseCase.countRemainingNewWords(deckId)
+                    _uiState.update { it.copy(remainingNewWordsInDeck = remaining) }
                 }
             }
             viewModelScope.launch(Dispatchers.IO) {
                 delay(TTS_WARMUP_DELAY_MS)
-                ttsManager.warmUp()
+                ttsPlayer.warmUp()
+            }
+        }
+    }
+
+    private fun observePreferences() {
+        viewModelScope.launch {
+            userPreferencesRepository.userPreferences.collect { prefs ->
+                val effectiveStreak = streakCalculator.effectiveStateForDisplay(
+                    stored = prefs.toStreakState(),
+                    todayEpochDay = timeProvider.todayEpochDay()
+                )
+                _uiState.update { state ->
+                    state.copy(
+                        speechRate = prefs.speechRate,
+                        autoPlayTts = prefs.autoPlayTts,
+                        enableHapticFeedback = prefs.enableHapticFeedback,
+                        sessionSummary = state.sessionSummary.copy(
+                            currentStreak = effectiveStreak.currentStreak
+                        )
+                    )
+                }
             }
         }
     }
 
     private fun buildInitialUiState(
-        initialQueue: com.toeicflashcard.domain.usecase.StudyQueueResult?,
-        cachedRate: Float?
+        initialQueue: StudyQueueResult?,
+        cachedRate: Float?,
+        cachedAutoPlay: Boolean?,
+        cachedHaptic: Boolean?
     ): StudyUiState {
         val rate = cachedRate ?: TtsManager.DEFAULT_SPEECH_RATE
+        val autoPlay = cachedAutoPlay ?: true
+        val haptic = cachedHaptic ?: false
         if (initialQueue == null) {
             return StudyUiState(
                 title = resolvedSessionTitle(),
-                speechRate = rate
+                speechRate = rate,
+                autoPlayTts = autoPlay,
+                enableHapticFeedback = haptic
             )
         }
         val firstWord = initialQueue.words.firstOrNull()
@@ -121,6 +169,8 @@ class StudyViewModel(
             cardInstanceKey = 0,
             intervalPreviews = previews,
             speechRate = rate,
+            autoPlayTts = autoPlay,
+            enableHapticFeedback = haptic,
             isSessionComplete = initialQueue.words.isEmpty()
         )
     }
@@ -133,33 +183,107 @@ class StudyViewModel(
                 hardWordsOnly = hardWordsOnly,
                 deckId = deckId
             )
-            val firstWord = result.words.firstOrNull()
-            val previews = firstWord?.let {
-                sm2Scheduler.previewAll(it, timeProvider.nowMillis())
-            }.orEmpty()
-
-            _uiState.update {
-                it.copy(
-                    title = resolvedSessionTitle(),
-                    isLoading = false,
-                    isPracticeMode = result.isPracticeMode,
-                    queue = result.words,
-                    totalInitialCount = result.words.size,
-                    completedUniqueCount = 0,
-                    requeuedCount = 0,
-                    isFlipped = false,
-                    hasRevealedBack = false,
-                    cardInstanceKey = 0,
-                    intervalPreviews = previews,
-                    speechRate = prefs.speechRate,
-                    isSessionComplete = result.words.isEmpty()
-                )
-            }
+            applyNewQueue(
+                result = result,
+                speechRate = prefs.speechRate,
+                autoPlayTts = prefs.autoPlayTts,
+                enableHapticFeedback = prefs.enableHapticFeedback
+            )
 
             viewModelScope.launch(Dispatchers.IO) {
                 delay(TTS_WARMUP_DELAY_MS)
-                ttsManager.warmUp()
+                ttsPlayer.warmUp()
             }
+        }
+    }
+
+    private suspend fun applyNewQueue(
+        result: StudyQueueResult,
+        speechRate: Float,
+        autoPlayTts: Boolean,
+        enableHapticFeedback: Boolean
+    ) {
+        requeuedIds.clear()
+        evaluatedWordIds.clear()
+        initialNewWordIds = result.words
+            .asSequence()
+            .filter { it.repetitions == 0 }
+            .map { it.id }
+            .toSet()
+        lastAutoPlayedCardInstanceKey = null
+
+        val firstWord = result.words.firstOrNull()
+        val previews = firstWord?.let {
+            sm2Scheduler.previewAll(it, timeProvider.nowMillis())
+        }.orEmpty()
+        val remainingNew = if (result.words.isEmpty()) {
+            getStudyQueueUseCase.countRemainingNewWords(deckId)
+        } else {
+            _uiState.value.remainingNewWordsInDeck
+        }
+        val prefs = userPreferencesRepository.userPreferences.first()
+        val effectiveStreak = streakCalculator.effectiveStateForDisplay(
+            stored = prefs.toStreakState(),
+            todayEpochDay = timeProvider.todayEpochDay()
+        )
+
+        _uiState.update { state ->
+            state.copy(
+                title = resolvedSessionTitle(),
+                isLoading = false,
+                isPracticeMode = result.isPracticeMode,
+                queue = result.words,
+                totalInitialCount = result.words.size,
+                completedUniqueCount = 0,
+                requeuedCount = 0,
+                isFlipped = false,
+                hasRevealedBack = false,
+                cardInstanceKey = state.cardInstanceKey + 1,
+                intervalPreviews = previews,
+                speechRate = speechRate,
+                autoPlayTts = autoPlayTts,
+                enableHapticFeedback = enableHapticFeedback,
+                isSessionComplete = result.words.isEmpty(),
+                sessionSummary = SessionSummaryStats(currentStreak = effectiveStreak.currentStreak),
+                remainingNewWordsInDeck = remainingNew
+            )
+        }
+    }
+
+    fun setScreenActive(active: Boolean) {
+        isScreenActive = active
+        if (!active) {
+            ttsPlayer.stop()
+        }
+    }
+
+    /**
+     * Plays the English front-face word at most once per [StudyUiState.cardInstanceKey]
+     * when Auto-play TTS is enabled, the screen is active, and the card is on its front face.
+     */
+    fun maybeAutoPlayCurrentCard() {
+        val state = _uiState.value
+        val currentWord = state.currentWord ?: return
+        if (!isScreenActive || !state.autoPlayTts || state.isLoading || state.isSessionComplete || state.isFlipped) {
+            return
+        }
+        if (lastAutoPlayedCardInstanceKey == state.cardInstanceKey) {
+            return
+        }
+        lastAutoPlayedCardInstanceKey = state.cardInstanceKey
+        ttsPlayer.stop()
+        val feedback = ttsPlayer.speak(currentWord.word, state.speechRate)
+        emitTtsFeedbackIfError(feedback)
+    }
+
+    fun toggleAutoPlayTts() {
+        val next = !_uiState.value.autoPlayTts
+        if (!next) {
+            ttsPlayer.stop()
+        }
+        _uiState.update { it.copy(autoPlayTts = next) }
+        viewModelScope.launch {
+            userPreferencesRepository.setAutoPlayTts(next)
         }
     }
 
@@ -179,13 +303,13 @@ class StudyViewModel(
 
     fun speakWord() {
         val word = _uiState.value.currentWord?.word ?: return
-        val feedback = ttsManager.speak(word, _uiState.value.speechRate)
+        val feedback = ttsPlayer.speak(word, _uiState.value.speechRate)
         emitTtsFeedbackIfError(feedback)
     }
 
     fun speakExample() {
         val example = _uiState.value.currentWord?.exampleEn ?: return
-        val feedback = ttsManager.speak(example, _uiState.value.speechRate)
+        val feedback = ttsPlayer.speak(example, _uiState.value.speechRate)
         emitTtsFeedbackIfError(feedback)
     }
 
@@ -206,11 +330,34 @@ class StudyViewModel(
         val currentWord = _uiState.value.currentWord ?: return
         if (isSubmitting) return
         isSubmitting = true
-        ttsManager.stop()
+        ttsPlayer.stop()
 
         viewModelScope.launch {
             try {
                 val updatedWord = submitReviewUseCase(currentWord, quality)
+                val firstTimeEvaluated = evaluatedWordIds.add(currentWord.id)
+                val isNewWordInSession = currentWord.id in initialNewWordIds
+                val isImmediateRecall = quality == ReviewQuality.GOOD || quality == ReviewQuality.EASY
+
+                val remainingCountPreview = _uiState.value.queue.size - 1
+                val willFinish = remainingCountPreview <= 0 && quality != ReviewQuality.AGAIN
+                val remainingNewInDeck = if (willFinish) {
+                    getStudyQueueUseCase.countRemainingNewWords(deckId)
+                } else {
+                    _uiState.value.remainingNewWordsInDeck
+                }
+                val latestPrefs = if (willFinish) {
+                    userPreferencesRepository.userPreferences.first()
+                } else {
+                    null
+                }
+                val latestStreak = latestPrefs?.let {
+                    streakCalculator.effectiveStateForDisplay(
+                        stored = it.toStreakState(),
+                        todayEpochDay = timeProvider.todayEpochDay()
+                    ).currentStreak
+                } ?: _uiState.value.sessionSummary.currentStreak
+
                 _uiState.update { state ->
                     val remaining = state.queue.drop(1)
                     val nextQueue = if (quality == ReviewQuality.AGAIN) {
@@ -231,6 +378,19 @@ class StudyViewModel(
                         state.completedUniqueCount
                     }
 
+                    val prevSummary = state.sessionSummary
+                    val nextSummary = if (firstTimeEvaluated) {
+                        prevSummary.copy(
+                            newWordsStudied = prevSummary.newWordsStudied + if (isNewWordInSession) 1 else 0,
+                            reviewedWordsCount = prevSummary.reviewedWordsCount + if (!isNewWordInSession) 1 else 0,
+                            totalEvaluatedCount = prevSummary.totalEvaluatedCount + 1,
+                            rememberedImmediatelyCount = prevSummary.rememberedImmediatelyCount + if (isImmediateRecall) 1 else 0,
+                            currentStreak = latestStreak
+                        )
+                    } else {
+                        prevSummary.copy(currentStreak = latestStreak)
+                    }
+
                     val nextFrontWord = nextQueue.firstOrNull()
                     val nextPreviews = nextFrontWord?.let {
                         sm2Scheduler.previewAll(it, timeProvider.nowMillis())
@@ -244,7 +404,9 @@ class StudyViewModel(
                         hasRevealedBack = false,
                         cardInstanceKey = state.cardInstanceKey + 1,
                         intervalPreviews = nextPreviews,
-                        isSessionComplete = nextQueue.isEmpty()
+                        isSessionComplete = nextQueue.isEmpty(),
+                        sessionSummary = nextSummary,
+                        remainingNewWordsInDeck = if (nextQueue.isEmpty()) remainingNewInDeck else state.remainingNewWordsInDeck
                     )
                 }
             } finally {
@@ -253,8 +415,29 @@ class StudyViewModel(
         }
     }
 
+    fun startNextNewWordsSession() {
+        if (isSubmitting) return
+        viewModelScope.launch {
+            val nextBatch = getStudyQueueUseCase.getNextNewWordsQueue(
+                deckId = deckId,
+                limit = GetStudyQueueUseCase.DEFAULT_DAILY_SESSION_LIMIT
+            )
+            if (nextBatch.words.isEmpty()) {
+                _uiState.update { it.copy(remainingNewWordsInDeck = 0) }
+                return@launch
+            }
+            val current = _uiState.value
+            applyNewQueue(
+                result = nextBatch,
+                speechRate = current.speechRate,
+                autoPlayTts = current.autoPlayTts,
+                enableHapticFeedback = current.enableHapticFeedback
+            )
+        }
+    }
+
     fun stopSpeaking() {
-        ttsManager.stop()
+        ttsPlayer.stop()
     }
 
     private fun emitTtsFeedbackIfError(feedback: TtsFeedback) {
@@ -267,7 +450,7 @@ class StudyViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        ttsManager.shutdown()
+        ttsPlayer.shutdown()
     }
 
     companion object {
@@ -289,9 +472,10 @@ class StudyViewModel(
                     getStudyQueueUseCase = container.getStudyQueueUseCase,
                     submitReviewUseCase = container.submitReviewUseCase,
                     sm2Scheduler = container.sm2Scheduler,
+                    streakCalculator = container.streakCalculator,
                     timeProvider = container.timeProvider,
                     userPreferencesRepository = container.userPreferencesRepository,
-                    createTtsManager = { onDeferred -> container.createTtsManager(onDeferred) }
+                    createTtsPlayer = { onDeferred -> container.createTtsManager(onDeferred) }
                 )
             }
         }

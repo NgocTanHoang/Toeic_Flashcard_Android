@@ -28,5 +28,6 @@ data class VocabularyEntity(
     val nextReviewTimestamp: Long = 0L,
     val lastReviewedTimestamp: Long = 0L,
     val deckId: String = VocabularyDecks.CORE_775_ID,
-    val deckName: String = VocabularyDecks.CORE_775_NAME
+    val deckName: String = VocabularyDecks.CORE_775_NAME,
+    val isStarred: Boolean = false
 )
