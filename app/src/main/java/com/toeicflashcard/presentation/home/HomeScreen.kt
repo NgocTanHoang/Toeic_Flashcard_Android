@@ -70,12 +70,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.toeicflashcard.core.ui.glass.AdaptiveCardMinWidth
 import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.CollapsibleHeaderSpring
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassSearchCapsule
+import com.toeicflashcard.core.ui.glass.LocalAppWindowMetrics
 import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
 import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
 import com.toeicflashcard.core.ui.glass.gridItemSpacing
@@ -898,6 +900,10 @@ internal fun TopicFlatCard(
     modifier: Modifier = Modifier
 ) {
     val glassColors = LocalLiquidGlassColors.current
+    val windowMetrics = LocalAppWindowMetrics.current
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val isFoldInner = windowMetrics.isFoldInnerExpanded ||
+        (screenWidthDp >= AdaptiveWideBreakpoint && screenWidthDp < 900.dp)
     val progress = if (topicProgress.totalCount > 0) {
         topicProgress.learnedCount.toFloat() / topicProgress.totalCount.toFloat()
     } else {
@@ -929,7 +935,7 @@ internal fun TopicFlatCard(
             ) {
                 Box(
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(if (isFoldInner) 44.dp else 40.dp)
                         .clip(CircleShape)
                         .background(iconCircleBg),
                     contentAlignment = Alignment.Center
@@ -938,7 +944,7 @@ internal fun TopicFlatCard(
                         imageVector = visual.icon,
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(if (isFoldInner) 24.dp else 20.dp)
                     )
                 }
 
@@ -948,7 +954,14 @@ internal fun TopicFlatCard(
                 ) {
                     Text(
                         text = topicProgress.topic,
-                        style = MaterialTheme.typography.titleSmall,
+                        style = if (isFoldInner) {
+                            MaterialTheme.typography.titleSmall.copy(
+                                fontSize = 15.sp,
+                                lineHeight = 20.sp
+                            )
+                        } else {
+                            MaterialTheme.typography.titleSmall
+                        },
                         fontWeight = FontWeight.SemiBold,
                         color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 2,

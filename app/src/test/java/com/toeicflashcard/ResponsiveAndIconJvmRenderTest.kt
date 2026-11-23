@@ -3,9 +3,13 @@ package com.toeicflashcard
 import androidx.compose.ui.unit.dp
 import com.toeicflashcard.core.time.TimeProvider
 import com.toeicflashcard.core.ui.glass.AdaptiveCardMinWidth
+import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.AppWindowMetrics
 import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
 import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
+import com.toeicflashcard.core.ui.glass.gridItemSpacing
+import com.toeicflashcard.core.ui.glass.screenHorizontalPadding
+import com.toeicflashcard.presentation.study.components.computeFlashcardLayoutMetrics
 import com.toeicflashcard.data.model.SeedVocabularyDto
 import com.toeicflashcard.domain.model.VocabularyDecks
 import com.toeicflashcard.domain.model.VocabularyWord
@@ -19,6 +23,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.io.File
@@ -150,5 +155,48 @@ class ResponsiveAndIconJvmRenderTest {
                 capturedFiles.any { it.length() > 100_000L }
             )
         }
+    }
+
+    @Test
+    fun `galaxyZFoldThreeScreenGroupsVerifyNarrowCoverShortCoverAndFoldInnerMetrics`() {
+        // Group A: Galaxy Z Fold 5/6 narrow cover (904x2316 @ 420dpi -> ~344.4dp x 882.3dp)
+        val fold5W = (904f / (420f / 160f)).dp
+        val fold5H = (2316f / (420f / 160f)).dp
+        val fold5Metrics = AppWindowMetrics(fold5W, fold5H)
+        assertTrue(fold5Metrics.isNarrowCover)
+        assertFalse(fold5Metrics.isExpandedWidth)
+        assertFalse(fold5Metrics.isShortCover)
+        assertFalse(fold5Metrics.isFoldInnerExpanded)
+        assertEquals(12.dp, screenHorizontalPadding(fold5W))
+
+        // Group B: Galaxy Z Fold 8 5.5" 10:16 short cover (1248x1972 @ 420dpi -> ~475.4dp x 751.2dp)
+        val fold8CoverW = (1248f / (420f / 160f)).dp
+        val fold8CoverH = (1972f / (420f / 160f)).dp
+        val fold8CoverMetrics = AppWindowMetrics(fold8CoverW, fold8CoverH)
+        assertFalse(fold8CoverMetrics.isNarrowCover)
+        assertFalse(fold8CoverMetrics.isExpandedWidth)
+        assertTrue(fold8CoverMetrics.isShortCover)
+        assertFalse(fold8CoverMetrics.isFoldInnerExpanded)
+        assertEquals(16.dp, screenHorizontalPadding(fold8CoverW))
+        val fold8Card = computeFlashcardLayoutMetrics(fold8CoverW, fold8CoverH)
+        assertEquals(20.dp, fold8Card.horizontalPadding)
+        assertEquals(16.dp, fold8Card.verticalPadding)
+        assertEquals(10.dp, fold8Card.sectionSpacing)
+
+        // Group C: Galaxy Z Fold Inner 7.6" (1848x2448 @ 370dpi -> ~799.1dp x 1058.6dp)
+        val foldInnerW = (1848f / (370f / 160f)).dp
+        val foldInnerH = (2448f / (370f / 160f)).dp
+        val foldInnerMetrics = AppWindowMetrics(foldInnerW, foldInnerH)
+        assertFalse(foldInnerMetrics.isNarrowCover)
+        assertFalse(foldInnerMetrics.isShortCover)
+        assertTrue(foldInnerMetrics.isExpandedWidth)
+        assertTrue(foldInnerMetrics.isFoldInnerExpanded)
+        assertTrue(foldInnerMetrics.foldInnerScale > 1.0f)
+        assertEquals(22.dp, screenHorizontalPadding(foldInnerW))
+        assertEquals(14.dp, gridItemSpacing(foldInnerW))
+        val innerPad = adaptiveHorizontalPadding(foldInnerW, MainContentMaxWidth)
+        val innerGap = gridItemSpacing(foldInnerW).value
+        val innerCols = floor((foldInnerW.value - innerPad.value * 2f + innerGap) / (AdaptiveCardMinWidth.value + innerGap)).toInt()
+        assertEquals(2, innerCols)
     }
 }

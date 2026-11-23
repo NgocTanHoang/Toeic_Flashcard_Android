@@ -18,11 +18,11 @@ class AppWindowMetricsTest {
     @Test
     fun `phone landscape and split screen are landscape short`() {
         val phoneLandscape = AppWindowMetrics(widthDp = 928.dp, heightDp = 411.dp)
-        assertTrue(phoneLandscape.isExpandedWidth)
+        assertFalse(phoneLandscape.isExpandedWidth)
         assertTrue(phoneLandscape.isLandscapeShort)
 
         val splitScreen = AppWindowMetrics(widthDp = 680.dp, heightDp = 600.dp)
-        assertFalse(splitScreen.isExpandedWidth)
+        assertTrue(splitScreen.isExpandedWidth)
         assertTrue(splitScreen.isLandscapeShort)
     }
 
@@ -69,15 +69,18 @@ class AppWindowMetricsTest {
 
     @Test
     fun `adaptive spacing tokens scale cleanly across phone, fold, and landscape tablet`() {
+        assertEquals(12.dp, screenHorizontalPadding(345.dp))
         assertEquals(16.dp, screenHorizontalPadding(411.dp))
-        assertEquals(28.dp, screenHorizontalPadding(842.dp))
+        assertEquals(22.dp, screenHorizontalPadding(842.dp))
+        assertEquals(28.dp, screenHorizontalPadding(914.dp))
         assertEquals(40.dp, screenHorizontalPadding(1280.dp))
 
         assertEquals(14.dp, sectionVerticalSpacing(411.dp))
         assertEquals(22.dp, sectionVerticalSpacing(842.dp))
 
         assertEquals(10.dp, gridItemSpacing(411.dp))
-        assertEquals(16.dp, gridItemSpacing(842.dp))
+        assertEquals(14.dp, gridItemSpacing(842.dp))
+        assertEquals(16.dp, gridItemSpacing(914.dp))
 
         assertEquals(16.dp, cardInnerPadding(411.dp))
         assertEquals(22.dp, cardInnerPadding(842.dp))

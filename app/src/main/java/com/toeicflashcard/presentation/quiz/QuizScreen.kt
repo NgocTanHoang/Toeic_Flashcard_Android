@@ -125,8 +125,12 @@ fun QuizScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     val glassColors = LocalLiquidGlassColors.current
     val windowMetrics = LocalAppWindowMetrics.current
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val config = LocalConfiguration.current
+    val screenWidthDp = config.screenWidthDp.dp
+    val screenHeightDp = config.screenHeightDp.dp
     val isWideScreen = screenWidthDp >= AdaptiveWideBreakpoint || windowMetrics.widthDp >= AdaptiveWideBreakpoint
+    val isNarrowCover = windowMetrics.isNarrowCover || screenWidthDp < 385.dp
+    val isShortCover = windowMetrics.isShortCover || (screenWidthDp < AdaptiveWideBreakpoint && screenHeightDp < 780.dp)
     val isLandscapeShort = windowMetrics.isLandscapeShort
     val quizMaxWidth = if (isWideScreen) WideQuizContentMaxWidth else FocusedContentMaxWidth
     val contentMaxWidth = if (isLandscapeShort) MainContentMaxWidth else quizMaxWidth
@@ -224,13 +228,17 @@ fun QuizScreen(
                                 isListeningMode = state.isListeningMode,
                                 isWideScreen = isWideScreen,
                                 isLandscapeShort = isLandscapeShort,
+                                isShortCover = isShortCover,
                                 containerMaxWidth = contentMaxWidth,
                                 onSpeakWord = viewModel::speakCurrentWord,
                                 onSelectOption = viewModel::selectOption,
                                 onNextQuestion = viewModel::nextQuestion,
                                 modifier = Modifier
                                     .fillMaxSize()
-                                    .padding(horizontal = 20.dp, vertical = 10.dp)
+                                    .padding(
+                                        horizontal = if (isNarrowCover) 12.dp else 20.dp,
+                                        vertical = 10.dp
+                                    )
                             )
                         }
                     }
@@ -352,6 +360,7 @@ private fun QuizQuestionContent(
     isListeningMode: Boolean,
     isWideScreen: Boolean,
     isLandscapeShort: Boolean,
+    isShortCover: Boolean = false,
     containerMaxWidth: Dp,
     onSpeakWord: () -> Unit,
     onSelectOption: (Int) -> Unit,
@@ -376,7 +385,7 @@ private fun QuizQuestionContent(
                 .fillMaxWidth()
                 .fillMaxHeight(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+            verticalArrangement = Arrangement.spacedBy(if (isShortCover) 10.dp else 14.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -525,7 +534,13 @@ private fun QuizQuestionContent(
                 val widePortrait = isWideScreen && !isLandscapeShort
                 Column(
                     modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(if (widePortrait) 20.dp else 14.dp)
+                    verticalArrangement = Arrangement.spacedBy(
+                        when {
+                            widePortrait -> 20.dp
+                            isShortCover -> 10.dp
+                            else -> 14.dp
+                        }
+                    )
                 ) {
                     QuizQuestionPromptCard(
                         question = slotQuestion,
@@ -538,7 +553,13 @@ private fun QuizQuestionContent(
                         modifier = Modifier
                             .fillMaxWidth()
                             .weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(if (widePortrait) 14.dp else 10.dp)
+                        verticalArrangement = Arrangement.spacedBy(
+                            when {
+                                widePortrait -> 14.dp
+                                isShortCover -> 8.dp
+                                else -> 10.dp
+                            }
+                        )
                     ) {
                         slotQuestion.options.forEachIndexed { index, option ->
                             QuizOptionGlassCard(

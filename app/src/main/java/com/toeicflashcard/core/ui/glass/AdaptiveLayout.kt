@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 val AdaptiveWideBreakpoint = 600.dp
 val AdaptiveCardMinWidth = 310.dp
 val StudyContentMaxWidth = 560.dp
+val FoldInnerStudyMaxWidth = 700.dp
 val WideStudyContentMaxWidth = 740.dp
 val FocusedContentMaxWidth = 580.dp
 val WideQuizContentMaxWidth = 700.dp
@@ -24,15 +25,20 @@ val MainContentMaxWidth = 1100.dp
 
 fun screenHorizontalPadding(availableWidth: Dp): Dp = when {
     availableWidth >= 1000.dp -> 40.dp
-    availableWidth >= AdaptiveWideBreakpoint -> 28.dp
+    availableWidth >= 900.dp -> 28.dp
+    availableWidth >= AdaptiveWideBreakpoint -> 22.dp
+    availableWidth < 385.dp -> 12.dp
     else -> 16.dp
 }
 
 fun sectionVerticalSpacing(availableWidth: Dp): Dp =
     if (availableWidth >= AdaptiveWideBreakpoint) 22.dp else 14.dp
 
-fun gridItemSpacing(availableWidth: Dp): Dp =
-    if (availableWidth >= AdaptiveWideBreakpoint) 16.dp else 10.dp
+fun gridItemSpacing(availableWidth: Dp): Dp = when {
+    availableWidth >= 900.dp -> 16.dp
+    availableWidth >= AdaptiveWideBreakpoint -> 14.dp
+    else -> 10.dp
+}
 
 fun cardInnerPadding(availableWidth: Dp): Dp =
     if (availableWidth >= AdaptiveWideBreakpoint) 22.dp else 16.dp

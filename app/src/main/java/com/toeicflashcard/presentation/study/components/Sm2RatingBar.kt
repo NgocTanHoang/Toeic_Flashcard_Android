@@ -49,8 +49,15 @@ fun Sm2RatingBar(
     isLargeVertical: Boolean = false
 ) {
     val sm2Colors = LocalSm2RatingColors.current
-    val isWide = LocalConfiguration.current.screenWidthDp.dp >= AdaptiveWideBreakpoint ||
-        LocalAppWindowMetrics.current.widthDp >= AdaptiveWideBreakpoint
+    val config = LocalConfiguration.current
+    val windowMetrics = LocalAppWindowMetrics.current
+    val effectiveWidth = maxOf(config.screenWidthDp.dp, windowMetrics.widthDp)
+    val effectiveHeight = minOf(config.screenHeightDp.dp, windowMetrics.heightDp)
+    val isWide = effectiveWidth >= AdaptiveWideBreakpoint
+    val isNarrowCover = windowMetrics.isNarrowCover || effectiveWidth < 385.dp
+    val isShortCover = windowMetrics.isShortCover || (effectiveWidth < AdaptiveWideBreakpoint && effectiveHeight < 780.dp)
+    val isFoldInner = windowMetrics.isFoldInnerExpanded ||
+        (effectiveWidth >= AdaptiveWideBreakpoint && effectiveWidth < 900.dp && effectiveHeight >= 580.dp)
 
     AnimatedVisibility(
         visible = visible,
@@ -85,7 +92,13 @@ fun Sm2RatingBar(
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(if (isWide) 14.dp else 7.dp)
+                horizontalArrangement = Arrangement.spacedBy(
+                    when {
+                        isWide -> 14.dp
+                        isNarrowCover -> 6.dp
+                        else -> 7.dp
+                    }
+                )
             ) {
                 ReviewQuality.entries.forEach { quality ->
                     val palette = when (quality) {
@@ -101,6 +114,8 @@ fun Sm2RatingBar(
                         colors = palette,
                         onClick = { onSelectQuality(quality) },
                         isVerticalLayout = false,
+                        isShortCover = isShortCover,
+                        isFoldInner = isFoldInner,
                         modifier = Modifier.weight(1f)
                     )
                 }
@@ -118,7 +133,9 @@ private fun Sm2GlassPillButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isVerticalLayout: Boolean = false,
-    isLargeVertical: Boolean = false
+    isLargeVertical: Boolean = false,
+    isShortCover: Boolean = false,
+    isFoldInner: Boolean = false
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val isDark = glassColors.isDark
@@ -184,11 +201,15 @@ private fun Sm2GlassPillButton(
         shadowModifier = Modifier
     }
 
-    var labelFontSizeSp by remember(label) { mutableFloatStateOf(13f) }
+    var labelFontSizeSp by remember(label, isFoldInner) {
+        mutableFloatStateOf(if (isFoldInner) 14f else 13f)
+    }
 
     val pillHeight = when {
         isVerticalLayout && isLargeVertical -> 76.dp
         isVerticalLayout -> 54.dp
+        isFoldInner -> 68.dp
+        isShortCover -> 56.dp
         else -> 64.dp
     }
 

@@ -61,6 +61,7 @@ private val ShortCardHeightBreakpoint = 780.dp
 internal data class FlashcardLayoutMetrics(
     val isWide: Boolean,
     val isShortHeight: Boolean,
+    val isFoldInner: Boolean,
     val horizontalPadding: Dp,
     val verticalPadding: Dp,
     val sectionSpacing: Dp,
@@ -73,10 +74,12 @@ internal fun computeFlashcardLayoutMetrics(
     isTabletLandscape: Boolean = false
 ): FlashcardLayoutMetrics {
     val isWide = screenWidthDp >= AdaptiveWideBreakpoint
-    val isShortHeight = screenHeightDp < ShortCardHeightBreakpoint && !isTabletLandscape
+    val isFoldInner = screenWidthDp >= AdaptiveWideBreakpoint && screenWidthDp < 900.dp && !isTabletLandscape
+    val isShortHeight = screenWidthDp < AdaptiveWideBreakpoint && screenHeightDp < ShortCardHeightBreakpoint && !isTabletLandscape
     return FlashcardLayoutMetrics(
         isWide = isWide,
         isShortHeight = isShortHeight,
+        isFoldInner = isFoldInner,
         horizontalPadding = when {
             isTabletLandscape -> 36.dp
             isWide -> 28.dp
@@ -84,11 +87,11 @@ internal fun computeFlashcardLayoutMetrics(
         },
         verticalPadding = when {
             isTabletLandscape -> 36.dp
-            isShortHeight -> 14.dp
+            isShortHeight -> 16.dp
             isWide -> 28.dp
             else -> 20.dp
         },
-        sectionSpacing = if (isShortHeight) 12.dp else 16.dp,
+        sectionSpacing = if (isShortHeight) 10.dp else 16.dp,
         exampleInnerPadding = if (isShortHeight) 14.dp else 18.dp
     )
 }
@@ -233,7 +236,14 @@ private fun FlashcardFrontFace(
         ) {
             Text(
                 text = word.word,
-                style = MaterialTheme.typography.headlineLarge,
+                style = if (layoutMetrics.isFoldInner) {
+                    MaterialTheme.typography.headlineLarge.copy(
+                        fontSize = 34.sp,
+                        lineHeight = 40.sp
+                    )
+                } else {
+                    MaterialTheme.typography.headlineLarge
+                },
                 color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
@@ -241,14 +251,18 @@ private fun FlashcardFrontFace(
             if (word.phonetic.isNotBlank()) {
                 Text(
                     text = word.phonetic,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = if (layoutMetrics.isFoldInner) {
+                        MaterialTheme.typography.titleLarge.copy(fontSize = 23.sp)
+                    } else {
+                        MaterialTheme.typography.titleLarge
+                    },
                     fontWeight = FontWeight.Medium,
                     color = accentFg,
                     textAlign = TextAlign.Center
                 )
             }
 
-            Spacer(modifier = Modifier.height(14.dp))
+            Spacer(modifier = Modifier.height(if (layoutMetrics.isShortHeight) 8.dp else 14.dp))
 
             val speakerBg = MaterialTheme.colorScheme.primary.copy(
                 alpha = if (glassColors.isDark) 0.14f else 0.16f
@@ -256,14 +270,14 @@ private fun FlashcardFrontFace(
             val speakerFg = MaterialTheme.colorScheme.primary
             LiquidGlassIconButton(
                 onClick = onSpeakWord,
-                size = 60.dp,
+                size = if (layoutMetrics.isFoldInner) 64.dp else 60.dp,
                 containerColor = speakerBg,
                 contentColor = speakerFg
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
                     contentDescription = "Phát âm từ ${word.word}",
-                    modifier = Modifier.size(28.dp)
+                    modifier = Modifier.size(if (layoutMetrics.isFoldInner) 30.dp else 28.dp)
                 )
             }
         }
@@ -343,7 +357,14 @@ private fun FlashcardBackFace(
             ) {
                 Text(
                     text = word.word,
-                    style = MaterialTheme.typography.headlineMedium,
+                    style = if (layoutMetrics.isFoldInner) {
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 30.sp,
+                            lineHeight = 36.sp
+                        )
+                    } else {
+                        MaterialTheme.typography.headlineMedium
+                    },
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 val backMeta = if (word.phonetic.isNotBlank()) {
@@ -360,14 +381,14 @@ private fun FlashcardBackFace(
 
             LiquidGlassIconButton(
                 onClick = onSpeakWord,
-                size = 36.dp,
+                size = if (layoutMetrics.isFoldInner) 44.dp else 36.dp,
                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.14f),
                 contentColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(
                     imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
                     contentDescription = "Phát âm từ ${word.word}",
-                    modifier = Modifier.size(18.dp)
+                    modifier = Modifier.size(if (layoutMetrics.isFoldInner) 22.dp else 18.dp)
                 )
             }
         }
@@ -386,8 +407,8 @@ private fun FlashcardBackFace(
                     .heightIn(min = centerMinHeight)
                     .padding(top = if (isTabletLandscape) 12.dp else 0.dp),
                 verticalArrangement = Arrangement.spacedBy(
-                    12.dp,
-                    if (isTabletLandscape) Alignment.Top else Alignment.CenterVertically
+                    if (layoutMetrics.isShortHeight) 8.dp else 12.dp,
+                    if (isTabletLandscape || layoutMetrics.isShortHeight) Alignment.Top else Alignment.CenterVertically
                 )
             ) {
                 Box(
@@ -397,7 +418,7 @@ private fun FlashcardBackFace(
                         .background(dividerBrush)
                 )
 
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(if (layoutMetrics.isShortHeight) 4.dp else 8.dp)) {
                     Text(
                         text = "NGHĨA TIẾNG VIỆT",
                         style = MaterialTheme.typography.labelSmall,
@@ -410,6 +431,11 @@ private fun FlashcardBackFace(
                             MaterialTheme.typography.headlineMedium.copy(
                                 fontSize = 28.sp,
                                 lineHeight = 36.sp
+                            )
+                        } else if (layoutMetrics.isFoldInner) {
+                            MaterialTheme.typography.headlineMedium.copy(
+                                fontSize = 25.sp,
+                                lineHeight = 33.sp
                             )
                         } else if (layoutMetrics.isWide) {
                             MaterialTheme.typography.headlineMedium.copy(
@@ -453,7 +479,7 @@ private fun FlashcardBackFace(
                     if (word.exampleEn.isNotBlank()) {
                         LiquidGlassIconButton(
                             onClick = onSpeakExample,
-                            size = 40.dp,
+                            size = if (layoutMetrics.isFoldInner) 44.dp else 40.dp,
                             containerColor = MaterialTheme.colorScheme.primary.copy(
                                 alpha = if (glassColors.isDark) 0.14f else 0.16f
                             ),
@@ -462,7 +488,7 @@ private fun FlashcardBackFace(
                             Icon(
                                 imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
                                 contentDescription = "Đọc câu ví dụ",
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(if (layoutMetrics.isFoldInner) 22.dp else 20.dp)
                             )
                         }
                     }

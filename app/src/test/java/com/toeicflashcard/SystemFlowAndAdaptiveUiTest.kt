@@ -357,16 +357,16 @@ class SystemFlowAndAdaptiveUiTest {
 
         val profiles = listOf(
             DeviceProfile("Q1_Phone_Portrait", 1080, 2436, 420, false, false, 16f, 14f, 10f, 16f, 1),
-            DeviceProfile("Q2_Phone_Landscape", 2436, 1080, 420, true, true, 28f, 22f, 16f, 22f, 2),
-            DeviceProfile("Q3_ZFold7_Cover", 968, 2376, 420, false, false, 16f, 14f, 10f, 16f, 1),
-            DeviceProfile("Q4_ZFold7_Inner", 1968, 2184, 374, true, false, 28f, 22f, 16f, 22f, 2),
+            DeviceProfile("Q2_Phone_Landscape", 2436, 1080, 420, false, true, 28f, 22f, 16f, 22f, 2),
+            DeviceProfile("Q3_ZFold7_Cover", 968, 2376, 420, false, false, 12f, 14f, 10f, 16f, 1),
+            DeviceProfile("Q4_ZFold7_Inner", 1968, 2184, 374, true, false, 22f, 22f, 14f, 22f, 2),
             DeviceProfile("Q5_OPPOPadSE_7_5", 1600, 2240, 280, true, false, 28f, 22f, 16f, 22f, 2),
             DeviceProfile("Q6_RedmiPad2_Portrait", 1600, 2560, 274, true, false, 28f, 22f, 16f, 22f, 2),
             DeviceProfile("Q7_RedmiPad2_Landscape", 2560, 1600, 274, true, false, 40f, 22f, 16f, 22f, 3),
             DeviceProfile("Q8_XiaomiPad8_Portrait", 2136, 3200, 345, true, false, 28f, 22f, 16f, 22f, 2),
             DeviceProfile("Q9_SplitScreen", 1080, 1218, 420, false, false, 16f, 14f, 10f, 16f, 1),
             DeviceProfile("Q10_ZFold8_Cover", 1248, 1972, 420, false, false, 16f, 14f, 10f, 16f, 1),
-            DeviceProfile("Q11_ZFold8_Inner", 1848, 2448, 370, true, false, 28f, 22f, 16f, 22f, 2)
+            DeviceProfile("Q11_ZFold8_Inner", 1848, 2448, 370, true, false, 22f, 22f, 14f, 22f, 2)
         )
 
         profiles.forEach { p ->
@@ -416,8 +416,8 @@ class SystemFlowAndAdaptiveUiTest {
         assertFalse(fold8Metrics.isWide)
         assertTrue(fold8Metrics.isShortHeight)
         assertEquals(20.dp, fold8Metrics.horizontalPadding)
-        assertEquals(14.dp, fold8Metrics.verticalPadding)
-        assertEquals(12.dp, fold8Metrics.sectionSpacing)
+        assertEquals(16.dp, fold8Metrics.verticalPadding)
+        assertEquals(10.dp, fold8Metrics.sectionSpacing)
         assertEquals(14.dp, fold8Metrics.exampleInnerPadding)
 
         // OPPO Pad SE portrait (1600x2240 @ 280dpi -> ~914.3dp x 1280dp)

@@ -72,6 +72,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.toeicflashcard.core.ui.glass.AdaptiveWideBreakpoint
 import com.toeicflashcard.core.ui.glass.AmbientMeshBackground
+import com.toeicflashcard.core.ui.glass.FoldInnerStudyMaxWidth
 import com.toeicflashcard.core.ui.glass.LiquidGlassButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassHairlineProgress
@@ -125,13 +126,23 @@ fun StudyScreen(
     val haptic = LocalHapticFeedback.current
     val glassColors = LocalLiquidGlassColors.current
     val windowMetrics = LocalAppWindowMetrics.current
-    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val config = LocalConfiguration.current
+    val screenWidthDp = config.screenWidthDp.dp
+    val screenHeightDp = config.screenHeightDp.dp
     val isWideScreen = screenWidthDp >= AdaptiveWideBreakpoint || windowMetrics.widthDp >= AdaptiveWideBreakpoint
+    val isNarrowCover = windowMetrics.isNarrowCover || screenWidthDp < 385.dp
+    val isShortCover = windowMetrics.isShortCover || (screenWidthDp < AdaptiveWideBreakpoint && screenHeightDp < 780.dp)
+    val isFoldInner = windowMetrics.isFoldInnerExpanded ||
+        (screenWidthDp >= AdaptiveWideBreakpoint && screenWidthDp < 900.dp && screenHeightDp >= 580.dp)
     val isLandscapeShort = windowMetrics.isLandscapeShort
     val isTabletLandscape = (screenWidthDp >= 900.dp || windowMetrics.widthDp >= 900.dp) &&
         (windowMetrics.widthDp > windowMetrics.heightDp)
     val useTwoColumnStudy = isLandscapeShort || isTabletLandscape
-    val studyMaxWidth = if (isWideScreen) WideStudyContentMaxWidth else StudyContentMaxWidth
+    val studyMaxWidth = when {
+        isFoldInner -> FoldInnerStudyMaxWidth
+        isWideScreen -> WideStudyContentMaxWidth
+        else -> StudyContentMaxWidth
+    }
     val contentMaxWidth = if (useTwoColumnStudy) MainContentMaxWidth else studyMaxWidth
 
     val onFlipWithHaptic = remember(viewModel, state.enableHapticFeedback, haptic) {
@@ -203,6 +214,7 @@ fun StudyScreen(
                 showCounter = !state.isLoading && !state.isSessionComplete,
                 maxWidth = contentMaxWidth,
                 isWideScreen = isWideScreen,
+                isNarrowCover = isNarrowCover,
                 onBack = {
                     viewModel.stopSpeaking()
                     onNavigateBack()
@@ -426,7 +438,10 @@ fun StudyScreen(
                                                 .widthIn(max = studyMaxWidth)
                                                 .fillMaxWidth()
                                                 .fillMaxHeight()
-                                                .padding(horizontal = 20.dp, vertical = 16.dp)
+                                                .padding(
+                                                    horizontal = if (isNarrowCover) 12.dp else 20.dp,
+                                                    vertical = if (isShortCover) 10.dp else 16.dp
+                                                )
                                         ) { slot ->
                                             val flipLatch = remember(slot.key) { FlipStateLatch(false) }
                                             if (slot.key == state.cardInstanceKey) {
@@ -446,9 +461,21 @@ fun StudyScreen(
                                     Box(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(horizontal = if (isWideScreen) 0.dp else 18.dp)
-                                            .padding(bottom = 14.dp)
-                                            .heightIn(min = 76.dp),
+                                            .padding(
+                                                horizontal = when {
+                                                    isWideScreen -> 0.dp
+                                                    isNarrowCover -> 12.dp
+                                                    else -> 18.dp
+                                                }
+                                            )
+                                            .padding(bottom = if (isShortCover) 10.dp else 14.dp)
+                                            .heightIn(
+                                                min = when {
+                                                    isShortCover -> 56.dp
+                                                    isFoldInner -> 72.dp
+                                                    else -> 76.dp
+                                                }
+                                            ),
                                         contentAlignment = Alignment.Center
                                     ) {
                                         Box(
@@ -531,6 +558,7 @@ private fun StudyTopBar(
     showCounter: Boolean,
     maxWidth: Dp = StudyContentMaxWidth,
     isWideScreen: Boolean = false,
+    isNarrowCover: Boolean = false,
     onBack: () -> Unit,
     onToggleSpeechRate: () -> Unit,
     onToggleAutoPlayTts: () -> Unit
@@ -547,9 +575,16 @@ private fun StudyTopBar(
             modifier = Modifier
                 .widthIn(max = maxWidth)
                 .fillMaxWidth()
-                .padding(horizontal = if (isWideScreen) 20.dp else 18.dp, vertical = 10.dp),
+                .padding(
+                    horizontal = when {
+                        isWideScreen -> 20.dp
+                        isNarrowCover -> 12.dp
+                        else -> 18.dp
+                    },
+                    vertical = 10.dp
+                ),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            horizontalArrangement = Arrangement.spacedBy(if (isNarrowCover) 6.dp else 12.dp)
         ) {
         LiquidGlassIconButton(
             onClick = onBack,
@@ -572,6 +607,7 @@ private fun StudyTopBar(
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onSurface,
                 maxLines = 1,
+                softWrap = false,
                 overflow = TextOverflow.Ellipsis
             )
             if (showCounter) {
@@ -584,13 +620,14 @@ private fun StudyTopBar(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1,
+                    softWrap = false,
                     overflow = TextOverflow.Ellipsis
                 )
             }
         }
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(if (isNarrowCover) 6.dp else 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             val autoPlayTint = when {
@@ -652,7 +689,10 @@ private fun StudyTopBar(
                 Text(
                     text = rateLabel,
                     style = MaterialTheme.typography.labelMedium,
-                    fontWeight = FontWeight.SemiBold
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    softWrap = false,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
         }

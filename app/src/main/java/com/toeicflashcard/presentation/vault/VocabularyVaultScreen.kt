@@ -74,6 +74,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -83,6 +84,7 @@ import com.toeicflashcard.core.ui.glass.CollapsibleHeaderSpring
 import com.toeicflashcard.core.ui.glass.LiquidGlassCard
 import com.toeicflashcard.core.ui.glass.LiquidGlassIconButton
 import com.toeicflashcard.core.ui.glass.LiquidGlassSearchCapsule
+import com.toeicflashcard.core.ui.glass.LocalAppWindowMetrics
 import com.toeicflashcard.core.ui.glass.MainContentMaxWidth
 import com.toeicflashcard.core.ui.glass.adaptiveHorizontalPadding
 import com.toeicflashcard.core.ui.glass.gridItemSpacing
@@ -249,7 +251,10 @@ fun FloatingVaultHeader(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
-    val horizPad = screenHorizontalPadding(LocalConfiguration.current.screenWidthDp.dp)
+    val screenWidthDp = LocalConfiguration.current.screenWidthDp.dp
+    val windowMetrics = LocalAppWindowMetrics.current
+    val isNarrowCover = windowMetrics.isNarrowCover || screenWidthDp < 385.dp
+    val horizPad = screenHorizontalPadding(screenWidthDp)
     val glassOpacity = LocalGlassOpacity.current
     val glassColors = LocalLiquidGlassColors.current
     var topRowHeightPx by remember { mutableIntStateOf(0) }
@@ -337,12 +342,12 @@ fun FloatingVaultHeader(
                         }
                         .padding(horizontal = horizPad, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(if (isNarrowCover) 6.dp else 10.dp)
                 ) {
                     Row(
                         modifier = Modifier.weight(1f),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(if (isNarrowCover) 6.dp else 8.dp)
                     ) {
                         Text(
                             text = "Kho từ",
@@ -537,6 +542,7 @@ private fun VaultDeckDropdownPill(
             fontWeight = FontWeight.SemiBold,
             color = MaterialTheme.colorScheme.onSurface,
             maxLines = 1,
+            softWrap = false,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f, fill = false)
         )
@@ -619,6 +625,7 @@ private fun VaultWordCard(
 ) {
     val glassColors = LocalLiquidGlassColors.current
     val sm2Colors = LocalSm2RatingColors.current
+    val isFoldInner = LocalAppWindowMetrics.current.isFoldInnerExpanded
 
     val isForgotten = remember(word.lastReviewedTimestamp, word.repetitions, word.easeFactor) {
         VocabularyVaultViewModel.isForgotten(word)
@@ -663,7 +670,11 @@ private fun VaultWordCard(
                     ) {
                         Text(
                             text = word.word,
-                            style = MaterialTheme.typography.titleMedium,
+                            style = if (isFoldInner) {
+                                MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp)
+                            } else {
+                                MaterialTheme.typography.titleMedium
+                            },
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface,
                             maxLines = 1,
@@ -701,7 +712,7 @@ private fun VaultWordCard(
 
                 LiquidGlassIconButton(
                     onClick = onSpeak,
-                    size = 40.dp,
+                    size = if (isFoldInner) 44.dp else 40.dp,
                     containerColor = if (glassColors.isDark) {
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.14f)
                     } else {
@@ -712,7 +723,7 @@ private fun VaultWordCard(
                     Icon(
                         imageVector = Icons.AutoMirrored.Rounded.VolumeUp,
                         contentDescription = "Phát âm ${word.word}",
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(if (isFoldInner) 22.dp else 20.dp)
                     )
                 }
             }
