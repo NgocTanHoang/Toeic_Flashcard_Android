@@ -12,7 +12,7 @@
 [![Room SQLite](https://img.shields.io/badge/Room_SQLite-2.6.1_(v4)-0F9D58?style=flat-square)](https://developer.android.com/training/data-storage/room)
 [![Vocabulary](https://img.shields.io/badge/Từ_vựng-2.154%2B_từ_%E2%80%A2_104_chủ_đề-2563EB?style=flat-square)](#-tính-năng-cốt-lõi)
 [![R8 Size](https://img.shields.io/badge/APK_Size-~2.1_MB_(R8)-0D9488?style=flat-square)](#-kiến-trúc-kỹ-thuật-dành-cho-developer)
-[![Download Beta APK](https://img.shields.io/badge/Download_Beta-APK-10B981?style=flat-square&logo=android&logoColor=white)](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest)
+[![Download Beta APK](https://img.shields.io/badge/Download_APK-v1.4.1-10B981?style=flat-square&logo=android&logoColor=white)](https://github.com/NgocTanHoang/Toeic_Flashcard_Android/releases/latest)
 
 <br />
 
