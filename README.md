@@ -47,10 +47,10 @@
 ### 1. Trang chủ Learning Dashboard, Flashcard 3D SM-2 & Màn hình Chủ đề
 <table>
   <tr>
-    <td align="center"><img src="screenshots_liquid_glass/light_01_home.png" width="175" alt="Trang chủ Light Mode" /></td>
-    <td align="center"><img src="screenshots_liquid_glass/dark_01_home.png" width="175" alt="Trang chủ Dark Mode" /></td>
-    <td align="center"><img src="screenshots_liquid_glass/light_04_study_back_sm2.png" width="175" alt="Flashcard 3D Light Mode" /></td>
-    <td align="center"><img src="screenshots_liquid_glass/dark_04_study_back_sm2.png" width="175" alt="Flashcard 3D Dark Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_light_home.png" width="175" alt="Trang chủ Light Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_dark_home.png" width="175" alt="Trang chủ Dark Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_light_study_back_sm2.png" width="175" alt="Flashcard 3D Light Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_dark_study_back_sm2.png" width="175" alt="Flashcard 3D Dark Mode" /></td>
     <td align="center"><img src="media/showcase/phone_deck_topics_screen.png" width="175" alt="Màn hình Chủ đề" /></td>
   </tr>
   <tr>
@@ -65,10 +65,10 @@
 ### 2. Kho từ vựng cá nhân & Thống kê tiến độ
 <table>
   <tr>
-    <td align="center"><img src="screenshots_liquid_glass/light_07_vault.png" width="205" alt="Kho từ Light Mode" /></td>
-    <td align="center"><img src="screenshots_liquid_glass/dark_07_vault.png" width="205" alt="Kho từ Dark Mode" /></td>
-    <td align="center"><img src="screenshots_liquid_glass/light_09_stats.png" width="205" alt="Thống kê Light Mode" /></td>
-    <td align="center"><img src="screenshots_liquid_glass/dark_09_stats.png" width="205" alt="Thống kê Dark Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_light_vault.png" width="205" alt="Kho từ Light Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_dark_vault.png" width="205" alt="Kho từ Dark Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_light_stats.png" width="205" alt="Thống kê Light Mode" /></td>
+    <td align="center"><img src="media/showcase/phone_dark_stats.png" width="205" alt="Thống kê Dark Mode" /></td>
   </tr>
   <tr>
     <td align="center"><sub><b>Kho từ • Light</b></sub></td>
@@ -94,18 +94,23 @@
   </tr>
 </table>
 
-### 4. Video giới thiệu (30s • 60fps) & App Icon v3
+### 4. Video giới thiệu (1080p • 60fps) & App Icon v3
 <table>
   <tr>
-    <td align="center" width="40%">
-      <a href="media/toeic_flashcard_promo_30s.mp4">
-        <img src="media/promo_poster.png" width="200" alt="Video Promo 30s 60fps Lexora" />
+    <td align="center" width="52%">
+      <a href="media/showcase/lexora_promo_1080p60_60fps_master.mp4">
+        <img src="media/showcase/lexora_promo_poster.png" width="360" alt="Video Promo 15s 1080p 60fps Lexora" />
       </a>
       <br />
-      <sub><a href="media/toeic_flashcard_promo_30s.mp4"><b>▶ Xem / Tải Video Showreel 60fps (30s)</b></a></sub>
+      <sub><a href="media/showcase/lexora_promo_1080p60_60fps_master.mp4"><b>▶ Xem / Tải Video Promo 15s (1080p • 60fps)</b></a></sub>
+      <br />
+      <sub>
+        <a href="media/showcase/lexora_demo.mp4">Demo thiết bị thực</a> •
+        <a href="media/toeic_flashcard_promo_30s.mp4">Showreel dọc 30s</a>
+      </sub>
     </td>
-    <td align="center" width="60%">
-      <img src="media/app_icon_preview_v3.png" width="300" alt="Lexora Adaptive Icon v3" />
+    <td align="center" width="48%">
+      <img src="media/app_icon_preview_v3.png" width="240" alt="Lexora Adaptive Icon v3" />
       <br />
       <sub>Adaptive Icon v3 "Lexora Glass Monogram" (70% Safe Zone, hỗ trợ Squircle / Circle / Monochrome API 33+)</sub>
     </td>
