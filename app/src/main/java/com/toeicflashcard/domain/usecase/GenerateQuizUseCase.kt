@@ -2,6 +2,7 @@ package com.toeicflashcard.domain.usecase
 
 import com.toeicflashcard.domain.model.QuizOption
 import com.toeicflashcard.domain.model.QuizQuestion
+import com.toeicflashcard.domain.model.VocabularyDecks
 import com.toeicflashcard.domain.model.VocabularyWord
 import com.toeicflashcard.domain.repository.VocabularyRepository
 import kotlinx.coroutines.CoroutineDispatcher
@@ -71,6 +72,7 @@ class GenerateQuizUseCase(
 
         val selectedWords = targetPool
             .shuffled(random)
+            .distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
             .take(maxQuestions.coerceAtLeast(1))
 
         return selectedWords.map { word ->

@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -67,8 +69,8 @@ fun Sm2RatingBar(
     ) {
         if (isVertical) {
             Column(
-                modifier = Modifier.fillMaxWidth(),
-                verticalArrangement = Arrangement.spacedBy(if (isLargeVertical) 14.dp else 10.dp)
+                modifier = if (isLargeVertical) Modifier.fillMaxSize() else Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(if (isLargeVertical) 12.dp else 10.dp)
             ) {
                 ReviewQuality.entries.forEach { quality ->
                     val palette = when (quality) {
@@ -85,7 +87,13 @@ fun Sm2RatingBar(
                         onClick = { onSelectQuality(quality) },
                         isVerticalLayout = true,
                         isLargeVertical = isLargeVertical,
-                        modifier = Modifier.fillMaxWidth()
+                        modifier = if (isLargeVertical) {
+                            Modifier
+                                .fillMaxWidth()
+                                .weight(1f)
+                        } else {
+                            Modifier.fillMaxWidth()
+                        }
                     )
                 }
             }
@@ -213,6 +221,12 @@ private fun Sm2GlassPillButton(
         else -> 64.dp
     }
 
+    val sizeModifier = if (isVerticalLayout && isLargeVertical) {
+        Modifier.heightIn(min = 68.dp).fillMaxSize()
+    } else {
+        Modifier.height(pillHeight)
+    }
+
     LiquidGlassCard(
         onClick = onClick,
         shape = Sm2PillShape,
@@ -220,13 +234,12 @@ private fun Sm2GlassPillButton(
         borderWidth = if (isDark) 0.9.dp else 1.dp,
         borderBrush = borderBrush,
         modifier = modifier
-            .height(pillHeight)
+            .then(sizeModifier)
             .then(shadowModifier)
     ) {
         Box(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(pillHeight)
+                .then(if (isVerticalLayout && isLargeVertical) Modifier.fillMaxSize() else Modifier.fillMaxWidth().height(pillHeight))
                 .padding(horizontal = if (isVerticalLayout) 16.dp else 4.dp, vertical = 8.dp),
             contentAlignment = Alignment.Center
         ) {

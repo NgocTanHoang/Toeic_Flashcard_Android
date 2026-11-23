@@ -76,14 +76,14 @@ class StatsViewModel(
     userPreferencesRepository: UserPreferencesRepository,
     private val timeProvider: TimeProvider,
     private val streakCalculator: StreakCalculator,
-    createTtsManager: ((TtsFeedback) -> Unit) -> TtsManager,
+    createTtsManager: ((TtsFeedback) -> Unit) -> TtsManager?,
     defaultDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
 
     private val _ttsMessages = MutableSharedFlow<String>(extraBufferCapacity = 4)
     val ttsMessages: SharedFlow<String> = _ttsMessages.asSharedFlow()
 
-    private val ttsManager: TtsManager = createTtsManager { feedback ->
+    private val ttsManager: TtsManager? = createTtsManager { feedback ->
         emitTtsFeedbackIfError(feedback)
     }
 
@@ -98,12 +98,14 @@ class StatsViewModel(
         )
 
         val minDay = todayEpochDay - 6L
-        val roomReviewedByDay = HashMap<Long, Int>()
+        val roomReviewedKeysByDay = HashMap<Long, HashSet<String>>()
         words.forEach { word ->
             if (word.lastReviewedTimestamp > 0L) {
                 val day = timeProvider.epochDayForMillis(word.lastReviewedTimestamp)
                 if (day in minDay..todayEpochDay) {
-                    roomReviewedByDay[day] = (roomReviewedByDay[day] ?: 0) + 1
+                    roomReviewedKeysByDay
+                        .getOrPut(day) { HashSet() }
+                        .add(VocabularyDecks.normalizeWordKey(word.word))
                 }
             }
         }
@@ -112,7 +114,7 @@ class StatsViewModel(
             val day = todayEpochDay + offset
             val historyCount = prefs.dailyReviewHistory[day] ?: 0
             val todayPrefCount = if (day == prefs.lastStudyDateEpochDay) prefs.dailyReviewedCount else 0
-            val roomCount = roomReviewedByDay[day] ?: 0
+            val roomCount = roomReviewedKeysByDay[day]?.size ?: 0
             val count = maxOf(historyCount, todayPrefCount, roomCount)
             DailyBarStat(
                 epochDay = day,
@@ -163,6 +165,7 @@ class StatsViewModel(
                     .thenBy { it.repetitions }
                     .thenBy { it.id }
             )
+            .distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
 
         StatsUiState(
             isLoading = words.isEmpty(),
@@ -188,12 +191,12 @@ class StatsViewModel(
         )
 
     fun speakWord(word: String) {
-        val feedback = ttsManager.speak(word, uiState.value.speechRate)
+        val feedback = ttsManager?.speak(word, uiState.value.speechRate) ?: return
         emitTtsFeedbackIfError(feedback)
     }
 
     fun stopSpeaking() {
-        ttsManager.stop()
+        ttsManager?.stop()
     }
 
     private fun emitTtsFeedbackIfError(feedback: TtsFeedback) {
@@ -206,7 +209,7 @@ class StatsViewModel(
 
     override fun onCleared() {
         super.onCleared()
-        ttsManager.shutdown()
+        ttsManager?.shutdown()
     }
 
     companion object {

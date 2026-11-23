@@ -1,0 +1,1048 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=1920, height=1080, initial-scale=1.0" />
+<title>Lexora — 15s Motion Promo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html, body {
+    width: 1920px;
+    height: 1080px;
+    overflow: hidden;
+    background: #090E18;
+    font-family: 'Plus Jakarta Sans', 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #F8FAFC;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  #stage {
+    position: relative;
+    width: 1920px;
+    height: 1080px;
+    background: #090E18;
+    overflow: hidden;
+    perspective: 1800px;
+  }
+
+  .act {
+    position: absolute;
+    inset: 0;
+    width: 1920px;
+    height: 1080px;
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+
+  /* Subtle hairline architectural grid — strictly #F8FAFC at low alpha, no glow */
+  #bg-grid {
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(to right, rgba(248, 250, 252, 0.03) 1px, transparent 1px),
+      linear-gradient(to bottom, rgba(248, 250, 252, 0.03) 1px, transparent 1px);
+    background-size: 120px 120px;
+    opacity: 0;
+  }
+
+  /* ================= ACT 1: OPEN ================= */
+  #act1-card-wrap {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 340px;
+    height: 440px;
+    margin-left: -170px;
+    margin-top: -220px;
+    transform-style: preserve-3d;
+  }
+
+  #act1-card {
+    position: relative;
+    width: 340px;
+    height: 440px;
+    border-radius: 28px;
+    background: #111A2E;
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #act1-l-svg {
+    position: absolute;
+    inset: 0;
+    width: 340px;
+    height: 440px;
+  }
+
+  #act1-card-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+  }
+
+  #act1-monogram {
+    font-size: 136px;
+    font-weight: 800;
+    letter-spacing: -0.04em;
+    line-height: 1;
+    background: linear-gradient(135deg, #38BDF8 0%, #34D399 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  #act1-wordmark-wrap {
+    position: absolute;
+    left: 740px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 820px;
+    overflow: hidden;
+  }
+
+  #act1-title {
+    font-size: 124px;
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.05;
+    color: #F8FAFC;
+  }
+
+  #act1-subtitle {
+    margin-top: 20px;
+    font-size: 42px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: #94A3B8;
+  }
+
+  #act1-accent-bar {
+    margin-top: 28px;
+    height: 6px;
+    width: 140px;
+    border-radius: 3px;
+    background: linear-gradient(90deg, #38BDF8 0%, #34D399 100%);
+    transform-origin: left center;
+  }
+
+  /* ================= ACT 2: CORE PILLARS ================= */
+  #act2-header {
+    position: absolute;
+    top: 148px;
+    left: 160px;
+    right: 160px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #act2-kicker {
+    font-size: 36px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: linear-gradient(90deg, #38BDF8 0%, #34D399 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  #act2-heading {
+    font-size: 56px;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    color: #F8FAFC;
+  }
+
+  #act2-grid {
+    position: absolute;
+    top: 320px;
+    left: 160px;
+    width: 1600px;
+    height: 540px;
+    display: flex;
+    gap: 40px;
+  }
+
+  .pillar-card {
+    flex: 1;
+    height: 540px;
+    border-radius: 28px;
+    background: #111A2E;
+    border: 1px solid rgba(248, 250, 252, 0.12);
+    padding: 52px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .pillar-l-corner {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+
+  .pillar-num {
+    font-size: 40px;
+    font-weight: 800;
+    color: #38BDF8;
+    letter-spacing: -0.02em;
+  }
+
+  .pillar-icon-box {
+    width: 88px;
+    height: 88px;
+    border-radius: 22px;
+    background: rgba(56, 189, 248, 0.10);
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .pillar-title {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    line-height: 1.15;
+    color: #F8FAFC;
+  }
+
+  .pillar-desc {
+    margin-top: 16px;
+    font-size: 36px;
+    font-weight: 500;
+    line-height: 1.38;
+    color: #94A3B8;
+  }
+
+  /* ================= ACT 3: REAL INTERFACE ================= */
+  #act3-caption-bar {
+    position: absolute;
+    top: 76px;
+    left: 140px;
+    right: 140px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  #act3-title {
+    font-size: 52px;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    color: #F8FAFC;
+  }
+
+  #act3-tag {
+    font-size: 36px;
+    font-weight: 700;
+    padding: 14px 32px;
+    border-radius: 999px;
+    background: #111A2E;
+    border: 1px solid rgba(56, 189, 248, 0.35);
+    color: #38BDF8;
+  }
+
+  #act3-carousel {
+    position: absolute;
+    top: 204px;
+    left: 0;
+    width: 3840px;
+    height: 780px;
+    display: flex;
+    align-items: center;
+  }
+
+  .device-slide {
+    width: 1920px;
+    height: 780px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 84px;
+    padding: 0 140px;
+  }
+
+  .phone-frame {
+    width: 360px;
+    height: 750px;
+    border-radius: 36px;
+    background: #111A2E;
+    border: 4px solid rgba(248, 250, 252, 0.20);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .phone-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 24px;
+    display: block;
+  }
+
+  .tablet-frame {
+    width: 1060px;
+    height: 676px;
+    border-radius: 32px;
+    background: #111A2E;
+    border: 4px solid rgba(248, 250, 252, 0.22);
+    padding: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .tablet-frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 20px;
+    display: block;
+  }
+
+  .slide-copy {
+    max-width: 640px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .slide-eyebrow {
+    font-size: 36px;
+    font-weight: 700;
+    color: #34D399;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .slide-headline {
+    font-size: 62px;
+    font-weight: 800;
+    line-height: 1.12;
+    letter-spacing: -0.025em;
+    color: #F8FAFC;
+  }
+
+  .slide-body {
+    font-size: 38px;
+    font-weight: 500;
+    line-height: 1.4;
+    color: #94A3B8;
+  }
+
+  /* ================= ACT 4: FLASHCARD 3D & SM-2 ================= */
+  #act4-stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 36px;
+    padding: 60px 140px;
+  }
+
+  #act4-progress-row {
+    width: 1080px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 32px;
+  }
+
+  #act4-goal-label {
+    font-size: 38px;
+    font-weight: 700;
+    color: #F8FAFC;
+    white-space: nowrap;
+  }
+
+  #act4-goal-track {
+    flex: 1;
+    height: 20px;
+    border-radius: 999px;
+    background: #111A2E;
+    border: 1px solid rgba(248, 250, 252, 0.14);
+    overflow: hidden;
+  }
+
+  #act4-goal-fill {
+    height: 100%;
+    width: 68%;
+    border-radius: 999px;
+    background: linear-gradient(90deg, #38BDF8 0%, #34D399 100%);
+  }
+
+  #act4-goal-count {
+    font-size: 38px;
+    font-weight: 800;
+    color: #34D399;
+    white-space: nowrap;
+  }
+
+  #flashcard-scene {
+    width: 1080px;
+    height: 540px;
+    perspective: 2200px;
+  }
+
+  #flashcard-3d {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    transform-style: preserve-3d;
+  }
+
+  .fc-face {
+    position: absolute;
+    inset: 0;
+    border-radius: 28px;
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+    padding: 52px 64px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
+
+  .fc-front {
+    background: #111A2E;
+    border: 2px solid rgba(56, 189, 248, 0.35);
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .fc-back {
+    background: #F8FAFC;
+    color: #090E18;
+    border: 2px solid rgba(248, 250, 252, 0.9);
+    transform: rotateY(180deg);
+  }
+
+  .fc-badge {
+    font-size: 36px;
+    font-weight: 700;
+    color: #38BDF8;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .fc-word {
+    font-size: 112px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    color: #F8FAFC;
+    margin: 18px 0 8px;
+  }
+
+  .fc-ipa {
+    font-size: 44px;
+    font-weight: 600;
+    color: #94A3B8;
+  }
+
+  .fc-back-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    border-bottom: 2px solid rgba(9, 14, 24, 0.10);
+    padding-bottom: 24px;
+  }
+
+  .fc-back-word {
+    font-size: 56px;
+    font-weight: 800;
+    color: #090E18;
+    letter-spacing: -0.02em;
+  }
+
+  .fc-back-ipa {
+    font-size: 38px;
+    font-weight: 600;
+    color: #475569;
+  }
+
+  .fc-meaning-label {
+    font-size: 36px;
+    font-weight: 700;
+    color: #0284C7;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  .fc-meaning-text {
+    font-size: 62px;
+    font-weight: 800;
+    color: #090E18;
+    letter-spacing: -0.02em;
+    margin-top: 8px;
+  }
+
+  .fc-example-box {
+    background: #E2E8F0;
+    border-left: 8px solid #38BDF8;
+    border-radius: 16px;
+    padding: 22px 30px;
+    font-size: 36px;
+    font-weight: 600;
+    color: #1E293B;
+    line-height: 1.35;
+  }
+
+  #sm2-bar {
+    width: 1080px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 24px;
+    position: relative;
+  }
+
+  .sm2-btn {
+    height: 124px;
+    border-radius: 24px;
+    background: #111A2E;
+    border: 2px solid rgba(248, 250, 252, 0.14);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    position: relative;
+  }
+
+  .sm2-btn.target-good {
+    border-color: #34D399;
+    background: #132A2C;
+  }
+
+  .sm2-btn-label {
+    font-size: 40px;
+    font-weight: 800;
+    color: #F8FAFC;
+  }
+
+  .sm2-btn-sub {
+    font-size: 36px;
+    font-weight: 600;
+    color: #94A3B8;
+  }
+
+  .sm2-btn.target-good .sm2-btn-label {
+    color: #34D399;
+  }
+
+  #tap-ring {
+    position: absolute;
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    border: 5px solid #34D399;
+    background: rgba(52, 211, 153, 0.18);
+    pointer-events: none;
+    left: 650px;
+    top: 20px;
+    opacity: 0;
+  }
+
+  /* ================= ACT 5: CLOSE & SEAMLESS LOOP ================= */
+  #act5-card {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 1220px;
+    height: 540px;
+    margin-left: -610px;
+    margin-top: -270px;
+    border-radius: 28px;
+    background: #111A2E;
+    border: 1px solid rgba(248, 250, 252, 0.14);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 64px;
+    padding: 64px 72px;
+    overflow: hidden;
+  }
+
+  #act5-l-svg {
+    position: absolute;
+    inset: 0;
+    width: 1220px;
+    height: 540px;
+    pointer-events: none;
+  }
+
+  #act5-icon {
+    width: 240px;
+    height: 240px;
+    border-radius: 52px;
+    object-fit: cover;
+    border: 2px solid rgba(248, 250, 252, 0.16);
+    flex-shrink: 0;
+  }
+
+  #act5-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  #act5-title {
+    font-size: 96px;
+    font-weight: 800;
+    letter-spacing: -0.03em;
+    line-height: 1.05;
+    color: #F8FAFC;
+  }
+
+  #act5-sub {
+    font-size: 40px;
+    font-weight: 600;
+    color: #94A3B8;
+  }
+
+  #act5-cta {
+    margin-top: 8px;
+    display: inline-flex;
+    align-items: center;
+    padding: 20px 36px;
+    border-radius: 20px;
+    background: linear-gradient(90deg, #38BDF8 0%, #34D399 100%);
+    color: #090E18;
+    font-size: 36px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    align-self: flex-start;
+  }
+</style>
+</head>
+<body>
+<div id="stage">
+  <div id="bg-grid"></div>
+
+  <!-- ACT 1: OPEN (0.0s - 3.0s) -->
+  <div id="act1" class="act">
+    <div id="act1-card-wrap">
+      <div id="act1-card">
+        <svg id="act1-l-svg" viewBox="0 0 340 440" fill="none">
+          <defs>
+            <linearGradient id="gradL1" x1="0" y1="0" x2="340" y2="440" gradientUnits="userSpaceOnUse">
+              <stop offset="0%" stop-color="#38BDF8" />
+              <stop offset="100%" stop-color="#34D399" />
+            </linearGradient>
+          </defs>
+          <!-- L-shaped accent path along left edge + bottom edge -->
+          <path id="act1-l-path"
+            d="M 10 34 L 10 412 Q 10 430 28 430 L 310 430"
+            stroke="url(#gradL1)"
+            stroke-width="10"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-dasharray="710"
+            stroke-dashoffset="710" />
+        </svg>
+        <div id="act1-card-inner">
+          <div id="act1-monogram">L</div>
+        </div>
+      </div>
+    </div>
+
+    <div id="act1-wordmark-wrap">
+      <div id="act1-title">Lexora</div>
+      <div id="act1-subtitle">TOEIC Vocabulary • SM-2</div>
+      <div id="act1-accent-bar"></div>
+    </div>
+  </div>
+
+  <!-- ACT 2: CORE PILLARS (3.0s - 6.0s) -->
+  <div id="act2" class="act">
+    <div id="act2-header">
+      <div id="act2-kicker">Giá trị cốt lõi</div>
+      <div id="act2-heading">Học tập trung, không xao nhãng</div>
+    </div>
+    <div id="act2-grid">
+      <div class="pillar-card" id="pillar-1">
+        <svg class="pillar-l-corner" viewBox="0 0 506 540" fill="none">
+          <linearGradient id="gradP1" x1="0" y1="0" x2="506" y2="540" gradientUnits="userSpaceOnUse">
+            <stop offset="0%" stop-color="#38BDF8" />
+            <stop offset="100%" stop-color="#34D399" />
+          </linearGradient>
+          <path d="M 4 28 L 4 512 Q 4 536 28 536 L 478 536" stroke="url(#gradP1)" stroke-width="6" stroke-linecap="round" />
+        </svg>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="pillar-icon-box">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="pillar-num">01</div>
+        </div>
+        <div>
+          <div class="pillar-title">100% Offline</div>
+          <div class="pillar-desc">Tra cứu và ôn tập mọi lúc, không cần kết nối mạng.</div>
+        </div>
+      </div>
+
+      <div class="pillar-card" id="pillar-2">
+        <svg class="pillar-l-corner" viewBox="0 0 506 540" fill="none">
+          <path d="M 4 28 L 4 512 Q 4 536 28 536 L 478 536" stroke="url(#gradP1)" stroke-width="6" stroke-linecap="round" />
+        </svg>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="pillar-icon-box">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#34D399" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9"/>
+              <line x1="5.6" y1="5.6" x2="18.4" y2="18.4"/>
+            </svg>
+          </div>
+          <div class="pillar-num">02</div>
+        </div>
+        <div>
+          <div class="pillar-title">Không quảng cáo</div>
+          <div class="pillar-desc">Giao diện sạch, tối giản và không theo dõi người dùng.</div>
+        </div>
+      </div>
+
+      <div class="pillar-card" id="pillar-3">
+        <svg class="pillar-l-corner" viewBox="0 0 506 540" fill="none">
+          <path d="M 4 28 L 4 512 Q 4 536 28 536 L 478 536" stroke="url(#gradP1)" stroke-width="6" stroke-linecap="round" />
+        </svg>
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div class="pillar-icon-box">
+            <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#38BDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+            </svg>
+          </div>
+          <div class="pillar-num">03</div>
+        </div>
+        <div>
+          <div class="pillar-title">Thuật toán SM-2</div>
+          <div class="pillar-desc">Lặp lại ngắt quãng tối ưu đúng điểm rơi trí nhớ.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACT 3: REAL INTERFACE (6.0s - 9.0s) -->
+  <div id="act3" class="act">
+    <div id="act3-caption-bar">
+      <div id="act3-title">Giao diện thực tế trên mọi màn hình</div>
+      <div id="act3-tag">Phone &amp; Tablet Adaptive</div>
+    </div>
+    <div id="act3-carousel">
+      <div class="device-slide">
+        <div class="phone-frame">
+          <img src="../../screenshots_responsive/01_phone_light_home.png" alt="Lexora Home" />
+        </div>
+        <div class="slide-copy">
+          <div class="slide-eyebrow">Home Dashboard</div>
+          <div class="slide-headline">Theo dõi tiến độ TOEIC trực quan mỗi ngày</div>
+          <div class="slide-body">Mục tiêu hàng ngày, chuỗi streak và các bộ từ vựng theo chủ đề luôn sẵn sàng.</div>
+        </div>
+      </div>
+      <div class="device-slide">
+        <div class="tablet-frame">
+          <img src="../../screenshots_responsive/redmipad2_02_study_back.jpg" alt="Lexora Tablet Landscape" />
+        </div>
+        <div class="slide-copy">
+          <div class="slide-eyebrow">Tablet 2 Cột</div>
+          <div class="slide-headline">Cân đối không gian học trên màn hình lớn</div>
+          <div class="slide-body">Thẻ Flashcard 3D bên trái và 4 mức đánh giá SM-2 thẳng hàng bên phải.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACT 4: FLASHCARD 3D & SM-2 ACTION (9.0s - 12.0s) -->
+  <div id="act4" class="act">
+    <div id="act4-stage">
+      <div id="act4-progress-row">
+        <div id="act4-goal-label">Mục tiêu hôm nay</div>
+        <div id="act4-goal-track"><div id="act4-goal-fill"></div></div>
+        <div id="act4-goal-count">14 / 20 từ</div>
+      </div>
+
+      <div id="flashcard-scene">
+        <div id="flashcard-3d">
+          <!-- Front -->
+          <div class="fc-face fc-front">
+            <div class="fc-badge">TOEIC • Meetings</div>
+            <div class="fc-word">agenda</div>
+            <div class="fc-ipa">/əˈdʒendə/ • n.</div>
+          </div>
+          <!-- Back -->
+          <div class="fc-face fc-back">
+            <div class="fc-back-header">
+              <div class="fc-back-word">agenda <span style="font-weight:600;color:#475569;font-size:38px;">(n.)</span></div>
+              <div class="fc-back-ipa">/əˈdʒendə/</div>
+            </div>
+            <div>
+              <div class="fc-meaning-label">Nghĩa tiếng Việt</div>
+              <div class="fc-meaning-text">chương trình nghị sự, kế hoạch họp</div>
+            </div>
+            <div class="fc-example-box">
+              “Let’s review the first item on today’s agenda.”
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div id="sm2-bar">
+        <div class="sm2-btn" id="btn-again">
+          <div class="sm2-btn-label">Quên</div>
+          <div class="sm2-btn-sub">10 phút</div>
+        </div>
+        <div class="sm2-btn" id="btn-hard">
+          <div class="sm2-btn-label">Khó</div>
+          <div class="sm2-btn-sub">1 ngày</div>
+        </div>
+        <div class="sm2-btn target-good" id="btn-good">
+          <div class="sm2-btn-label">Nhớ</div>
+          <div class="sm2-btn-sub">6 ngày</div>
+        </div>
+        <div class="sm2-btn" id="btn-easy">
+          <div class="sm2-btn-label">Dễ</div>
+          <div class="sm2-btn-sub">12 ngày</div>
+        </div>
+        <div id="tap-ring"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACT 5: CLOSE & SEAMLESS LOOP (12.0s - 15.0s) -->
+  <div id="act5" class="act">
+    <div id="act5-card">
+      <svg id="act5-l-svg" viewBox="0 0 1220 540" fill="none">
+        <linearGradient id="gradL5" x1="0" y1="0" x2="1220" y2="540" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stop-color="#38BDF8" />
+          <stop offset="100%" stop-color="#34D399" />
+        </linearGradient>
+        <path id="act5-l-path"
+          d="M 8 34 L 8 512 Q 8 532 28 532 L 1190 532"
+          stroke="url(#gradL5)"
+          stroke-width="8"
+          stroke-linecap="round"
+          stroke-dasharray="1720"
+          stroke-dashoffset="0" />
+      </svg>
+      <img id="act5-icon" src="../../media/app_icon_preview_v3.png" alt="Lexora App Icon" />
+      <div id="act5-copy">
+        <div id="act5-title">Lexora</div>
+        <div id="act5-sub">TOEIC Vocabulary • SM-2</div>
+        <div id="act5-cta">Tải miễn phí trên GitHub Releases</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function() {
+  // Exact cubic-bezier(0.22, 1, 0.36, 1) solver (Newton-Raphson)
+  function bezierEase(t) {
+    if (t <= 0) return 0;
+    if (t >= 1) return 1;
+    const x1 = 0.22, y1 = 1.0, x2 = 0.36, y2 = 1.0;
+    let u = t;
+    for (let i = 0; i < 6; i++) {
+      const inv = 1 - u;
+      const x = 3 * inv * inv * u * x1 + 3 * inv * u * u * x2 + u * u * u;
+      const dx = 3 * inv * inv * x1 + 6 * inv * u * (x2 - x1) + 3 * u * u * (1 - x2);
+      if (Math.abs(dx) < 1e-6) break;
+      u = Math.min(1, Math.max(0, u - (x - t) / dx));
+    }
+    const inv = 1 - u;
+    return 3 * inv * inv * u * y1 + 3 * inv * u * u * y2 + u * u * u;
+  }
+
+  function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+  function prog(t, start, end) { return clamp01((t - start) / (end - start)); }
+  function lerp(a, b, p) { return a + (b - a) * p; }
+
+  const bgGrid = document.getElementById('bg-grid');
+  const act1 = document.getElementById('act1');
+  const act1CardWrap = document.getElementById('act1-card-wrap');
+  const act1LPath = document.getElementById('act1-l-path');
+  const act1Wordmark = document.getElementById('act1-wordmark-wrap');
+  const act1Title = document.getElementById('act1-title');
+  const act1Sub = document.getElementById('act1-subtitle');
+  const act1Bar = document.getElementById('act1-accent-bar');
+
+  const act2 = document.getElementById('act2');
+  const act2Header = document.getElementById('act2-header');
+  const p1 = document.getElementById('pillar-1');
+  const p2 = document.getElementById('pillar-2');
+  const p3 = document.getElementById('pillar-3');
+
+  const act3 = document.getElementById('act3');
+  const act3Caption = document.getElementById('act3-caption-bar');
+  const act3Carousel = document.getElementById('act3-carousel');
+
+  const act4 = document.getElementById('act4');
+  const fc3d = document.getElementById('flashcard-3d');
+  const btnGood = document.getElementById('btn-good');
+  const tapRing = document.getElementById('tap-ring');
+  const goalFill = document.getElementById('act4-goal-fill');
+  const goalCount = document.getElementById('act4-goal-count');
+
+  const act5 = document.getElementById('act5');
+  const act5Card = document.getElementById('act5-card');
+  const act5LPath = document.getElementById('act5-l-path');
+
+  window.seek = function(t) {
+    t = Math.max(0, Math.min(15, Number(t) || 0));
+
+    // Background architectural grid fades in after 0.2s, fades out cleanly before 15.0s
+    const gridIn = bezierEase(prog(t, 0.15, 0.9));
+    const gridOut = 1 - bezierEase(prog(t, 14.3, 14.95));
+    bgGrid.style.opacity = (0.85 * gridIn * gridOut).toFixed(4);
+
+    // ================= ACT 1 (0.0 - 3.0s) =================
+    const a1In = bezierEase(prog(t, 0.05, 0.55));
+    const a1Out = 1 - bezierEase(prog(t, 2.55, 3.0));
+    const a1Vis = t < 3.05 ? a1In * a1Out : 0;
+    act1.style.opacity = a1Vis.toFixed(4);
+
+    if (a1Vis > 0.001) {
+      const drawP = bezierEase(prog(t, 0.25, 1.05));
+      act1LPath.style.strokeDashoffset = lerp(710, 0, drawP).toFixed(2);
+
+      const shiftP = bezierEase(prog(t, 0.95, 1.75));
+      const driftP = prog(t, 1.75, 2.7);
+      const cardX = lerp(0, -440, shiftP) - driftP * 14;
+      const cardScale = lerp(0.84, 1.0, a1In) * lerp(1.0, 0.96, 1 - a1Out);
+      const rotY = lerp(14, -8, shiftP) + Math.sin(t * 2.1) * 2.5;
+      const rotX = lerp(6, 2, shiftP);
+      act1CardWrap.style.transform =
+        `translate3d(${cardX.toFixed(2)}px, 0px, 0px) scale(${cardScale.toFixed(4)}) rotateY(${rotY.toFixed(2)}deg) rotateX(${rotX.toFixed(2)}deg)`;
+
+      const wmP = bezierEase(prog(t, 1.05, 1.75));
+      const wmSubP = bezierEase(prog(t, 1.2, 1.9));
+      act1Wordmark.style.opacity = wmP.toFixed(4);
+      act1Title.style.transform = `translate3d(${lerp(56, 0, wmP).toFixed(2)}px, 0, 0)`;
+      act1Sub.style.transform = `translate3d(${lerp(40, 0, wmSubP).toFixed(2)}px, 0, 0)`;
+      act1Sub.style.opacity = wmSubP.toFixed(4);
+      act1Bar.style.transform = `scaleX(${bezierEase(prog(t, 1.35, 2.05)).toFixed(4)})`;
+    }
+
+    // ================= ACT 2 (3.0 - 6.0s) =================
+    const a2In = bezierEase(prog(t, 2.8, 3.3));
+    const a2Out = 1 - bezierEase(prog(t, 5.55, 6.0));
+    const a2Vis = (t >= 2.75 && t <= 6.05) ? a2In * a2Out : 0;
+    act2.style.opacity = a2Vis.toFixed(4);
+
+    if (a2Vis > 0.001) {
+      const hdrP = bezierEase(prog(t, 2.9, 3.45));
+      act2Header.style.transform = `translate3d(0, ${lerp(36, 0, hdrP).toFixed(2)}px, 0)`;
+      act2Header.style.opacity = hdrP.toFixed(4);
+
+      // 120 BPM beat staggers: 3.0s, 3.5s, 4.0s
+      const cards = [
+        { el: p1, s: 3.05 },
+        { el: p2, s: 3.50 },
+        { el: p3, s: 3.95 }
+      ];
+      cards.forEach((c, idx) => {
+        const cp = bezierEase(prog(t, c.s, c.s + 0.55));
+        const subtleFloat = Math.sin((t - 3.0) * 2.2 + idx * 1.1) * 5;
+        c.el.style.opacity = cp.toFixed(4);
+        c.el.style.transform = `translate3d(0, ${(lerp(64, 0, cp) + subtleFloat).toFixed(2)}px, 0) scale(${lerp(0.95, 1, cp).toFixed(4)})`;
+      });
+    }
+
+    // ================= ACT 3 (6.0 - 9.0s) =================
+    const a3In = bezierEase(prog(t, 5.8, 6.35));
+    const a3Out = 1 - bezierEase(prog(t, 8.55, 9.0));
+    const a3Vis = (t >= 5.75 && t <= 9.05) ? a3In * a3Out : 0;
+    act3.style.opacity = a3Vis.toFixed(4);
+
+    if (a3Vis > 0.001) {
+      const capP = bezierEase(prog(t, 5.9, 6.45));
+      act3Caption.style.transform = `translate3d(0, ${lerp(28, 0, capP).toFixed(2)}px, 0)`;
+      act3Caption.style.opacity = capP.toFixed(4);
+
+      // Glide smoothly from Phone Home slide (x=0) to Tablet 2-Column slide (x=-1920)
+      const glideP = bezierEase(prog(t, 7.05, 8.1));
+      const panDrift = prog(t, 6.0, 9.0) * 24;
+      const carX = lerp(0, -1920, glideP) - panDrift;
+      act3Carousel.style.transform = `translate3d(${carX.toFixed(2)}px, 0, 0) scale(${lerp(0.97, 1.0, a3In).toFixed(4)})`;
+    }
+
+    // ================= ACT 4 (9.0 - 12.0s) =================
+    const a4In = bezierEase(prog(t, 8.8, 9.35));
+    const a4Out = 1 - bezierEase(prog(t, 11.55, 12.0));
+    const a4Vis = (t >= 8.75 && t <= 12.05) ? a4In * a4Out : 0;
+    act4.style.opacity = a4Vis.toFixed(4);
+
+    if (a4Vis > 0.001) {
+      // Card 3D flip: 0deg -> 180deg between 9.55s and 10.35s
+      const flipP = bezierEase(prog(t, 9.55, 10.35));
+      const flipAngle = lerp(0, 180, flipP);
+      const liftZ = Math.sin(flipP * Math.PI) * 70;
+      const subtleTilt = (t - 9.0) * 1.4 - 2.0;
+      fc3d.style.transform = `translate3d(0, 0, ${liftZ.toFixed(1)}px) rotateY(${flipAngle.toFixed(2)}deg) rotateX(${subtleTilt.toFixed(2)}deg)`;
+
+      // Tap ring on "Nhớ (6 ngày)" between 10.65s and 11.25s
+      const tapP = prog(t, 10.65, 11.25);
+      if (tapP > 0 && tapP < 1) {
+        const tp = bezierEase(tapP);
+        tapRing.style.opacity = (1 - tp).toFixed(4);
+        tapRing.style.transform = `scale(${lerp(0.5, 1.45, tp).toFixed(3)})`;
+      } else {
+        tapRing.style.opacity = '0';
+      }
+
+      // Button press feedback at 10.75s - 11.15s
+      const pressP = Math.sin(prog(t, 10.7, 11.1) * Math.PI);
+      btnGood.style.transform = `scale(${(1 - pressP * 0.05).toFixed(4)})`;
+
+      // Progress bar fills smoothly from 68% -> 75% (14/20 -> 15/20)
+      const goalP = bezierEase(prog(t, 10.8, 11.5));
+      goalFill.style.width = `${lerp(68, 75, goalP).toFixed(2)}%`;
+      goalCount.textContent = goalP >= 0.45 ? '15 / 20 từ' : '14 / 20 từ';
+    }
+
+    // ================= ACT 5 (12.0 - 15.0s) =================
+    const a5In = bezierEase(prog(t, 11.8, 12.4));
+    // Dissolve cleanly back to #090E18 at 15.0s so frame 0 == frame 900
+    const a5Out = 1 - bezierEase(prog(t, 14.35, 14.95));
+    const a5Vis = t >= 11.75 ? a5In * a5Out : 0;
+    act5.style.opacity = a5Vis.toFixed(4);
+
+    if (a5Vis > 0.001) {
+      const s5 = lerp(0.92, 1.0, a5In) * lerp(1.0, 0.94, 1 - a5Out);
+      const y5 = lerp(36, 0, a5In) + lerp(0, -18, 1 - a5Out);
+      act5Card.style.transform = `translate3d(0, ${y5.toFixed(2)}px, 0) scale(${s5.toFixed(4)})`;
+      const lDraw5 = bezierEase(prog(t, 12.1, 13.0));
+      act5LPath.style.strokeDashoffset = lerp(1720, 0, lDraw5).toFixed(2);
+    }
+  };
+
+  window.seek(0);
+})();
+</script>
+</body>
+</html>

@@ -394,61 +394,54 @@ private fun FlashcardBackFace(
         }
 
         // Zone 2: Divider + Vietnamese Meaning centered in remaining space & independently scrollable on short viewports
-        BoxWithConstraints(
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(0.8.dp)
+                .background(dividerBrush)
+        )
+
+        Box(
             modifier = Modifier
                 .weight(1f)
-                .fillMaxWidth()
+                .fillMaxWidth(),
+            contentAlignment = if (layoutMetrics.isShortHeight) Alignment.TopStart else Alignment.CenterStart
         ) {
-            val centerMinHeight = maxHeight
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .heightIn(min = centerMinHeight)
-                    .padding(top = if (isTabletLandscape) 12.dp else 0.dp),
-                verticalArrangement = Arrangement.spacedBy(
-                    if (layoutMetrics.isShortHeight) 8.dp else 12.dp,
-                    if (isTabletLandscape || layoutMetrics.isShortHeight) Alignment.Top else Alignment.CenterVertically
-                )
+                    .verticalScroll(rememberScrollState()),
+                verticalArrangement = Arrangement.spacedBy(if (layoutMetrics.isShortHeight) 4.dp else 8.dp)
             ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(0.8.dp)
-                        .background(dividerBrush)
+                Text(
+                    text = "NGHĨA TIẾNG VIỆT",
+                    style = MaterialTheme.typography.labelSmall,
+                    letterSpacing = 0.8.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                Column(verticalArrangement = Arrangement.spacedBy(if (layoutMetrics.isShortHeight) 4.dp else 8.dp)) {
-                    Text(
-                        text = "NGHĨA TIẾNG VIỆT",
-                        style = MaterialTheme.typography.labelSmall,
-                        letterSpacing = 0.8.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Text(
-                        text = word.meaningVi,
-                        style = if (isTabletLandscape) {
-                            MaterialTheme.typography.headlineMedium.copy(
-                                fontSize = 28.sp,
-                                lineHeight = 36.sp
-                            )
-                        } else if (layoutMetrics.isFoldInner) {
-                            MaterialTheme.typography.headlineMedium.copy(
-                                fontSize = 25.sp,
-                                lineHeight = 33.sp
-                            )
-                        } else if (layoutMetrics.isWide) {
-                            MaterialTheme.typography.headlineMedium.copy(
-                                fontSize = 24.sp,
-                                lineHeight = 32.sp
-                            )
-                        } else {
-                            MaterialTheme.typography.headlineMedium
-                        },
-                        fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.onSurface
-                    )
-                }
+                Text(
+                    text = word.meaningVi,
+                    style = if (isTabletLandscape) {
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 28.sp,
+                            lineHeight = 36.sp
+                        )
+                    } else if (layoutMetrics.isFoldInner) {
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 25.sp,
+                            lineHeight = 33.sp
+                        )
+                    } else if (layoutMetrics.isWide) {
+                        MaterialTheme.typography.headlineMedium.copy(
+                            fontSize = 24.sp,
+                            lineHeight = 32.sp
+                        )
+                    } else {
+                        MaterialTheme.typography.headlineMedium
+                    },
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
             }
         }
 

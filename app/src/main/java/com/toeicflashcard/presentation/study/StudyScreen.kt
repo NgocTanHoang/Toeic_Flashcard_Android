@@ -143,7 +143,11 @@ fun StudyScreen(
         isWideScreen -> WideStudyContentMaxWidth
         else -> StudyContentMaxWidth
     }
-    val contentMaxWidth = if (useTwoColumnStudy) MainContentMaxWidth else studyMaxWidth
+    val contentMaxWidth = when {
+        isTabletLandscape -> 960.dp
+        useTwoColumnStudy -> MainContentMaxWidth
+        else -> studyMaxWidth
+    }
 
     val onFlipWithHaptic = remember(viewModel, state.enableHapticFeedback, haptic) {
         {
@@ -291,10 +295,10 @@ fun StudyScreen(
                                 if (useTwoColumnStudy) {
                                     Row(
                                         modifier = Modifier
-                                            .widthIn(max = MainContentMaxWidth)
+                                            .widthIn(max = contentMaxWidth)
                                             .fillMaxWidth()
                                             .weight(1f)
-                                            .padding(horizontal = 20.dp, vertical = 14.dp),
+                                            .padding(start = 20.dp, end = 20.dp, top = 14.dp, bottom = 24.dp),
                                         horizontalArrangement = Arrangement.spacedBy(22.dp),
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
@@ -337,7 +341,7 @@ fun StudyScreen(
                                             },
                                             label = "card_transition_landscape",
                                             modifier = Modifier
-                                                .weight(0.68f)
+                                                .weight(0.64f)
                                                 .fillMaxHeight()
                                         ) { slot ->
                                             val flipLatch = remember(slot.key) { FlipStateLatch(false) }
@@ -357,7 +361,7 @@ fun StudyScreen(
 
                                         Box(
                                             modifier = Modifier
-                                                .weight(0.32f)
+                                                .weight(0.36f)
                                                 .fillMaxHeight(),
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -367,7 +371,8 @@ fun StudyScreen(
                                                     fadeIn(tween(durationMillis = 220)) togetherWith
                                                         fadeOut(tween(durationMillis = 140))
                                                 },
-                                                label = "rating_bar_transition_landscape"
+                                                label = "rating_bar_transition_landscape",
+                                                modifier = if (isTabletLandscape) Modifier.fillMaxSize() else Modifier
                                             ) { revealed ->
                                                 if (revealed) {
                                                     Sm2RatingBar(
@@ -375,16 +380,22 @@ fun StudyScreen(
                                                         intervalPreviews = state.intervalPreviews,
                                                         onSelectQuality = onSubmitRatingWithHaptic,
                                                         isVertical = true,
-                                                        isLargeVertical = isTabletLandscape
+                                                        isLargeVertical = isTabletLandscape,
+                                                        modifier = if (isTabletLandscape) Modifier.fillMaxSize() else Modifier
                                                     )
                                                 } else {
-                                                    Text(
-                                                        text = "Chạm vào thẻ để xem nghĩa và chọn mức độ ghi nhớ",
-                                                        style = MaterialTheme.typography.bodyMedium,
-                                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                                        textAlign = TextAlign.Center,
-                                                        modifier = Modifier.padding(horizontal = 12.dp)
-                                                    )
+                                                    Box(
+                                                        modifier = if (isTabletLandscape) Modifier.fillMaxSize() else Modifier,
+                                                        contentAlignment = Alignment.Center
+                                                    ) {
+                                                        Text(
+                                                            text = "Chạm vào thẻ để xem nghĩa và chọn mức độ ghi nhớ",
+                                                            style = MaterialTheme.typography.bodyMedium,
+                                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                                            textAlign = TextAlign.Center,
+                                                            modifier = Modifier.padding(horizontal = 12.dp)
+                                                        )
+                                                    }
                                                 }
                                             }
                                         }

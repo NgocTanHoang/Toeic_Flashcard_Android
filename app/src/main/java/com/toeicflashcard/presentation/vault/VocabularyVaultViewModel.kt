@@ -78,9 +78,11 @@ class VocabularyVaultViewModel(
         selectedFilter
     ) { allWords, (speechRate, activeDeckId), query, filter ->
         val deckScopedWords = if (activeDeckId == VocabularyDecks.ALL_ID) {
-            allWords
+            allWords.distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
         } else {
-            allWords.filter { it.deckId == activeDeckId }
+            allWords
+                .filter { it.deckId == activeDeckId }
+                .distinctBy { VocabularyDecks.normalizeWordKey(it.word) }
         }
 
         var forgottenCount = 0

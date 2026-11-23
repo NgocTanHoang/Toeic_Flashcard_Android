@@ -25,3 +25,11 @@ screenshots_responsive/
 promo_video/
 promo_vertical_30s/
 *.apk
+
+# Additional Secrets & Promo Render Intermediates
+.env
+.env.*
+*.pem
+*.p12
+tools/promo_renderer/previews/
+tools/promo_renderer/*.wav
