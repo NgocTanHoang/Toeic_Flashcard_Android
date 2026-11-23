@@ -1,6 +1,6 @@
 # Lexora `v1.4.1` — Galaxy Z Fold & Tablet Adaptive UI
 
-Ứng dụng học từ vựng **TOEIC 100% Offline, không quảng cáo** với giao diện **Apple Liquid Glass**, thuật toán lặp lại ngắt quãng **SM-2** và khả năng tự thích ứng mượt mà trên **Điện thoại, Galaxy Z Fold & Máy tính bảng**.
+Ứng dụng học từ vựng **TOEIC 100% Offline, không quảng cáo** với giao diện **Kính mờ tối giản (Frosted Glass)**, thuật toán lặp lại ngắt quãng **SM-2** và khả năng tự thích ứng mượt mà trên **Điện thoại, Galaxy Z Fold & Máy tính bảng**.
 
 ---
 
@@ -11,7 +11,7 @@
   - **Màn ngoài lùn (`Z Fold 8 5.5" 10:16`):** Giữ bố cục 1 cột, phần nghĩa tiếng Việt cuộn độc lập để không bị khung `Ví dụ ngữ cảnh` che khuất, tối ưu chiều cao nút SM-2 (`56.dp`).
   - **Màn trong gập mở (`600–899.dp`):** Bố cục 2 cột thoáng mắt, nâng cỡ chữ, nút loa (`44.dp`), nút SM-2 (`68.dp`) và icon chủ đề (`24.dp`) để thao tác thoải mái bằng hai tay.
 - **Thương hiệu Lexora & App Icon v3:** Giữ nguyên mã gói `com.toeicflashcard` và khóa ký số để cài đè giữ nguyên **100% tiến độ SM-2**.
-- **Màn hình Chủ đề riêng (`DeckTopicsScreen`):** Thanh tìm kiếm Liquid Glass trôi lên thả nổi khi cuộn, đồng bộ độ mờ/độ trong suốt trong Cài đặt.
+- **Màn hình Chủ đề riêng (`DeckTopicsScreen`):** Thanh tìm kiếm Frosted Glass trôi lên thả nổi khi cuộn, đồng bộ độ mờ/độ trong suốt trong Cài đặt.
 
 ---
 

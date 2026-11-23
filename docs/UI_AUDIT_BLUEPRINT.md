@@ -74,7 +74,7 @@ flowchart TD
 | (Khi bấm Search: [ LiquidGlassSearchCapsule (Query / Clear)    ]) |
 +-------------------------------------------------------------------+
 | +---------------------------------------------------------------+ |
-| | TIẾN ĐỘ HÔM NAY                        Đạt mục tiêu • 100%    | | <- HeroGlassDashboard (Liquid Glass)
+| | TIẾN ĐỘ HÔM NAY                        Đạt mục tiêu • 100%    | | <- HeroGlassDashboard (Frosted Glass)
 | | +---------------+   +---------------+   +-------------------+ | |
 | | |      12       |   |       8       |   |    15 [EditIcon]  | | | <- 3 Metric Tiles (Mục tiêu -> Dialog)
 | | |    Cần ôn     |   |    Đã học     |   |     Mục tiêu      | | |

@@ -4,7 +4,7 @@
 
 # Lexora — TOEIC Vocabulary • SM-2
 
-**Ứng dụng học từ vựng TOEIC 100% offline, không quảng cáo — thiết kế Apple Liquid Glass, thuật toán lặp lại ngắt quãng SM-2 và tự thích ứng đa màn hình (Phone • Galaxy Z Fold • Tablet).**
+**Ứng dụng học từ vựng TOEIC 100% offline, không quảng cáo — thiết kế Kính mờ tối giản (Frosted Glass), thuật toán lặp lại ngắt quãng SM-2 và tự thích ứng đa màn hình (Phone • Galaxy Z Fold • Tablet).**
 
 [![Kotlin](https://img.shields.io/badge/Kotlin-2.0.21-7F52FF?style=flat-square&logo=kotlin&logoColor=white)](https://kotlinlang.org/)
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack_Compose-BOM_2024.12.01-4285F4?style=flat-square&logo=jetpackcompose&logoColor=white)](https://developer.android.com/compose)
@@ -120,7 +120,7 @@
 - **Thuật toán lặp lại ngắt quãng SuperMemo-2 (SM-2):** Tách bạch `Đến hạn ôn` và `Từ mới`, tính khoảng lặp tối ưu qua 4 mức đánh giá (`Quên`, `Khó`, `Bình thường`, `Dễ`), hỗ trợ **Hoàn tác (Undo)** lượt vừa chấm và thẻ tổng kết phiên học (`SessionSummaryCard`).
 - **Thẻ Flashcard 3D & Phát âm TTS ngoại tuyến:** Hiệu ứng lật 3D mượt mà (`graphicsLayer`), hỗ trợ tốc độ đọc `0.75x / 1.0x`, tự động phát âm và câu ví dụ ngữ cảnh.
 - **Luyện tập Quiz & Nghe phản xạ:** Trắc nghiệm 10 câu và chế độ Luyện nghe ẩn mặt chữ, tự động đưa các từ làm sai vào hàng đợi ôn tập gấp.
-- **Hệ sinh thái Apple Liquid Glass:** Kính mờ thời gian thực (`Haze`), thanh tìm kiếm thả nổi khi cuộn (`CollapsibleHeaderState`), **7 bảng màu Dark Mode** (*Đen OLED*, *Catppuccin Mocha*, *Tokyo Night*, *Nord*, *Rosé Pine*, *Gruvbox*, *GitHub Dark*) và thanh trượt **Độ đục kính (`45% – 95%`)**.
+- **Hệ sinh thái Kính mờ tối giản (Minimalist Glassmorphism & Flat Surface):** Kính mờ thời gian thực (`Haze`), thanh tìm kiếm thả nổi khi cuộn (`CollapsibleHeaderState`), **7 bảng màu Dark Mode** (*Đen OLED*, *Catppuccin Mocha*, *Tokyo Night*, *Nord*, *Rosé Pine*, *Gruvbox*, *GitHub Dark*) và thanh trượt **Độ đục kính (`45% – 95%`)**.
 
 ---
 

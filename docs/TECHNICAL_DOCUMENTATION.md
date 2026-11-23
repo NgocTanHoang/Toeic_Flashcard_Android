@@ -1,6 +1,6 @@
 # Tài Liệu Kỹ Thuật — Lexora (`v1.4.0`)
 
-Tài liệu này mô tả kiến trúc phần mềm, thuật toán SM-2, hệ thống giao diện thích ứng đa thiết bị (Phone / Foldable / Tablet), đồ họa Apple Liquid Glass 120Hz ARR, lưu trữ Room v4, bảo mật chữ ký số và quy trình CI/CD của **Lexora** (*TOEIC Vocabulary • SM-2*).
+Tài liệu này mô tả kiến trúc phần mềm, thuật toán SM-2, hệ thống giao diện thích ứng đa thiết bị (Phone / Foldable / Tablet), đồ họa Kính mờ tối giản (Minimalist Glassmorphism & Flat Surface) 120Hz ARR, lưu trữ Room v4, bảo mật chữ ký số và quy trình CI/CD của **Lexora** (*TOEIC Vocabulary • SM-2*).
 
 ---
 
@@ -76,7 +76,7 @@ $$I(n) = \begin{cases} 1 \text{ (đẩy về cuối hàng đợi phiên hiện t
 
 ---
 
-## 4. Đồ Họa Apple Liquid Glass & Hiệu Năng 120Hz ARR
+## 4. Đồ Họa Kính Mờ Tối Giản (Frosted Glass) & Hiệu Năng 120Hz ARR
 
 - **Kính mờ thời gian thực (`dev.chrisbanes.haze:haze:1.0.0`):** Dùng 1 `HazeState` nguồn duy nhất tại `MainTabShell` áp dụng cho Floating Header, Search Pill, Bottom Dock và In-window Sheets/Dialogs.
 - **Draw-phase Animations:** `CollapsibleHeaderState` và `LiquidGlassBottomDock` biến đổi `translationY`, `alpha`, `scaleX`, `scaleY` trực tiếp trong `graphicsLayer` -> **0 recomposition** khi cuộn.

@@ -1,6 +1,6 @@
 # Báo Cáo Tổng Hợp Dự Án: TOEIC Flashcard (`com.toeicflashcard`)
 
-> **TOEIC Flashcard** là ứng dụng học từ vựng TOEIC đa giác quan chạy hoàn toàn ngoại tuyến (**offline-first**) trên Android, tích hợp **4 kho học liệu với 2.154 từ vựng across 104 chủ đề** (+ kho **Từ vựng tự thêm** qua nhập tay hoặc file JSON), thuật toán lặp lại ngắt quãng **SuperMemo-2 (SM-2)**, hệ thống **Daily Streak & Biểu đồ 7 ngày**, **Trắc nghiệm nhanh & Luyện nghe phản xạ TTS**, **WorkManager Daily Reminder**, ngôn ngữ giao diện **Apple Liquid Glass** hỗ trợ **7 không gian học tập tối (Dark Presets)** cùng **thanh trượt độ đục kính thời gian thực**, và tối ưu **120Hz Adaptive Refresh Rate (ARR)**.
+> **TOEIC Flashcard** là ứng dụng học từ vựng TOEIC đa giác quan chạy hoàn toàn ngoại tuyến (**offline-first**) trên Android, tích hợp **4 kho học liệu với 2.154 từ vựng across 104 chủ đề** (+ kho **Từ vựng tự thêm** qua nhập tay hoặc file JSON), thuật toán lặp lại ngắt quãng **SuperMemo-2 (SM-2)**, hệ thống **Daily Streak & Biểu đồ 7 ngày**, **Trắc nghiệm nhanh & Luyện nghe phản xạ TTS**, **WorkManager Daily Reminder**, ngôn ngữ giao diện **Kính mờ tối giản (Frosted Glass)** hỗ trợ **7 không gian học tập tối (Dark Presets)** cùng **thanh trượt độ đục kính thời gian thực**, và tối ưu **120Hz Adaptive Refresh Rate (ARR)**.
 
 ---
 
@@ -13,7 +13,7 @@
 | **Phiên bản Android hỗ trợ** | `minSdk = 24` (Android 7.0) — `targetSdk = 35` — `compileSdk = 35` (JVM 17) |
 | **Ngân hàng từ vựng (4 Assets + Custom)** | **2.154 từ vựng** thuộc **104 chủ đề** (`30 + 745` Cốt Lõi `775` • `600` từ *600 Essential Words* • `779` từ *800 Từ TOEIC Level 450*) + từ tự thêm ID `>= 3001` (truy vấn động 0-hardcode từ Room) |
 | **Điều hướng & Màn hình chính** | **4 Tab Dock nổi** (`Trang chủ`, `Kho từ`, `Luyện tập`, `Thống kê`) + **Overlay Warm NavHost** (`StudyRoute`, `QuizRoute`) + **Adaptive Layout** (Phone, Foldable, Tablet) |
-| **Ngôn ngữ thiết kế** | **Apple Liquid Glass** (`dev.chrisbanes.haze:haze:1.0.0`), Light Ice Mesh + **7 Dark Presets** + **Real-time Glass Opacity Slider** + **App Icon v2** |
+| **Ngôn ngữ thiết kế** | **Minimalist Glassmorphism & Flat Surface** (`dev.chrisbanes.haze:haze:1.0.0`), Light Ice Mesh + **7 Dark Presets** + **Real-time Glass Opacity Slider** + **App Icon v2** |
 | **Hiệu năng & Tần số quét** | **120Hz Adaptive Refresh Rate** (`preferredDisplayModeId`, `isFrameRatePowerSavingsBalanced = true` trên API 35+, 0 infinite idle animation) |
 | **Kiểm thử tự động & Thực tế** | **61/61 Unit & System Tests Pass** (`15` test suites, `0` failures/errors/skipped); xác minh trên **TECNO CLA5** (`120Hz`), **OPPO Pad SE**, **Redmi Pad 2**, **Galaxy Z Fold** (`<= 2.0 GB` RAM AVD suite) |
 
@@ -21,9 +21,9 @@
 
 ```mermaid
 flowchart LR
-    S1["GĐ 1–3: Nền tảng & Dữ liệu\nClean Architecture + SM-2\nStreak + Quiz + Room v2 (775 từ)"] --> S2["GĐ 4–5: Apple Liquid Glass\nHaze 1.0.0 + Hero Dashboard\nEdge-to-Edge + Glass Opacity Slider"]
+    S1["GĐ 1–3: Nền tảng & Dữ liệu\nClean Architecture + SM-2\nStreak + Quiz + Room v2 (775 từ)"] --> S2["GĐ 4–5: Minimalist Glassmorphism\nHaze 1.0.0 + Hero Dashboard\nEdge-to-Edge + Glass Opacity Slider"]
     S2 --> S3["GĐ 6: Tối ưu Motion & Transition\nWarm MainTabShell + Draw-phase Animations\nLoại bỏ delay back & xé hình chuyển cảnh"]
-    S3 --> S4["GĐ 7: Điều hướng 4 Tab & Thống kê\nFloating Liquid Glass Bottom Dock\nSafari Auto-Hide + Kho từ + Luyện nghe + Stats"]
+    S3 --> S4["GĐ 7: Điều hướng 4 Tab & Thống kê\nFloating Frosted Glass Bottom Dock\nSafari Auto-Hide + Kho từ + Luyện nghe + Stats"]
     S4 --> S5["GĐ 8: Hệ sinh thái Theme & Custom\n7 Dark Presets + Tự thêm từ (Tay/JSON)\nChuyển nhanh Sáng/Tối"]
     S5 --> S6["GĐ 9–10: Đa Giáo trình & Tinh gọn\nRoom v3 + 2.154 từ / 104 chủ đề\nDeck Dropdown Sync + 120Hz ARR"]
     S6 --> S7["GĐ 11–12 (v1.3.0): Adaptive Fold/Tablet\nSingle-Card SM-2 Hero + 0-Hardcode\nApp Icon v2 + 15 Test Suites (61 tests)"]
@@ -168,7 +168,7 @@ flowchart TD
 
 - Trạng thái `selectedDeckId` lưu bền vững trong DataStore và đồng bộ hai chiều giữa **Trang chủ**, **Kho từ vựng**, **Luyện tập**, **Phiên học Flashcard** và **Quiz**.
 
-### 4.2. Điều hướng Floating Liquid Glass Dock & `DockScrollController`
+### 4.2. Điều hướng Floating Frosted Glass Dock & `DockScrollController`
 - [LiquidGlassBottomDock.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/core/ui/glass/LiquidGlassBottomDock.kt): Thanh dock dạng viên thuốc lơ lửng phía trên `navigationBarsPadding() + 12.dp`, kính mờ `hazeChild(blurRadius = 18.dp)` với 4 tab: **Trang chủ**, **Kho từ**, **Luyện tập**, **Thống kê**.
 - **Safari / Facebook Auto-Hide:** Theo dõi cuộn qua `NestedScrollConnection` (ngưỡng `-24f`/`+16f`), ẩn/hiện mượt bằng spring physics thuần trên Draw-phase (`graphicsLayer { translationY; alpha; scaleX; scaleY }`, **0 recomposition**) và tự động hiện lại khi chạm cuối danh sách hoặc mở màn hình con/sheet.
 
