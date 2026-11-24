@@ -50,7 +50,7 @@ flowchart LR
 
 ## 3. Kiến Trúc Hệ Thống & Danh Mục Mã Nguồn
 
-Ứng dụng áp dụng mô hình **Clean Architecture 3 tầng** kết hợp **MVVM** và **Manual Dependency Injection** qua [AppContainer.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/di/AppContainer.kt), tách biệt hoàn toàn quy tắc nghiệp vụ khỏi Android SDK.
+Ứng dụng áp dụng mô hình **Clean Architecture 3 tầng** kết hợp **MVVM** và **Manual Dependency Injection** qua [AppContainer.kt](app/src/main/java/com/toeicflashcard/di/AppContainer.kt), tách biệt hoàn toàn quy tắc nghiệp vụ khỏi Android SDK.
 
 ```mermaid
 flowchart TD
@@ -156,7 +156,7 @@ flowchart TD
 ## 4. Danh Mục 12 Nhóm Tính Năng Đã Triển Khai
 
 ### 4.1. Hệ thống Đa Giáo Trình (2.154 từ / 104 chủ đề) & `DeckSwitcherSheet`
-- 4 nguồn học liệu có thể chuyển đổi tức thì qua **Deck Dropdown Switcher** (`DeckSwitcherPill` trên Trang chủ & `VaultDeckDropdownPill` trên Kho từ) mở chung bottom sheet [DeckSwitcherSheet.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/home/components/DeckSwitcherSheet.kt):
+- 4 nguồn học liệu có thể chuyển đổi tức thì qua **Deck Dropdown Switcher** (`DeckSwitcherPill` trên Trang chủ & `VaultDeckDropdownPill` trên Kho từ) mở chung bottom sheet [DeckSwitcherSheet.kt](app/src/main/java/com/toeicflashcard/presentation/home/components/DeckSwitcherSheet.kt):
 
 | `deckId` | Tên bộ từ (`deckName`) | Quy mô | Phân bổ ID / Chủ đề |
 | --- | --- | :---: | --- |
@@ -169,12 +169,12 @@ flowchart TD
 - Trạng thái `selectedDeckId` lưu bền vững trong DataStore và đồng bộ hai chiều giữa **Trang chủ**, **Kho từ vựng**, **Luyện tập**, **Phiên học Flashcard** và **Quiz**.
 
 ### 4.2. Điều hướng Floating Frosted Glass Dock & `DockScrollController`
-- [LiquidGlassBottomDock.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/core/ui/glass/LiquidGlassBottomDock.kt): Thanh dock dạng viên thuốc lơ lửng phía trên `navigationBarsPadding() + 12.dp`, kính mờ `hazeChild(blurRadius = 18.dp)` với 4 tab: **Trang chủ**, **Kho từ**, **Luyện tập**, **Thống kê**.
+- [LiquidGlassBottomDock.kt](app/src/main/java/com/toeicflashcard/core/ui/glass/LiquidGlassBottomDock.kt): Thanh dock dạng viên thuốc lơ lửng phía trên `navigationBarsPadding() + 12.dp`, kính mờ `hazeChild(blurRadius = 18.dp)` với 4 tab: **Trang chủ**, **Kho từ**, **Luyện tập**, **Thống kê**.
 - **Safari / Facebook Auto-Hide:** Theo dõi cuộn qua `NestedScrollConnection` (ngưỡng `-24f`/`+16f`), ẩn/hiện mượt bằng spring physics thuần trên Draw-phase (`graphicsLayer { translationY; alpha; scaleX; scaleY }`, **0 recomposition**) và tự động hiện lại khi chạm cuối danh sách hoặc mở màn hình con/sheet.
 
 ### 4.3. Trang chủ (`HomeScreen`) & Hero Glass Dashboard
 - `FloatingGlassHomeHeader` tối giản chỉ gồm **DeckSwitcherPill** bên trái (tên giáo trình + `SM-2 • X từ • Y chủ đề` + chevron `▾`), **2 nút tròn** bên phải (**Cài đặt** & **Chuyển nhanh Sáng/Tối**), và thanh tìm kiếm `LiquidGlassSearchCapsule` lọc theo tên tiếng Anh & phụ đề tiếng Việt của `TopicVisuals`.
-- [HeroGlassDashboard.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/home/components/HeroGlassDashboard.kt): Hiển thị số từ đến hạn ôn hôm nay trong bộ từ đang chọn, tiến độ đã thuộc (`learnedCount / totalCount`), vòng tròn `CircularProgressIndicator` (`4.dp`) mục tiêu ngày (`5`, `10`, `20` từ), huy hiệu Streak và nút CTA **"Ôn tập ngay"** (tối đa `20` từ/phiên).
+- [HeroGlassDashboard.kt](app/src/main/java/com/toeicflashcard/presentation/home/components/HeroGlassDashboard.kt): Hiển thị số từ đến hạn ôn hôm nay trong bộ từ đang chọn, tiến độ đã thuộc (`learnedCount / totalCount`), vòng tròn `CircularProgressIndicator` (`4.dp`) mục tiêu ngày (`5`, `10`, `20` từ), huy hiệu Streak và nút CTA **"Ôn tập ngay"** (tối đa `20` từ/phiên).
 - Danh sách `TopicGlassCard` hỗ trợ tiêu đề tối đa 2 dòng (không cắt chữ với tên bài dài), thanh tiến độ hairline `2.dp` sát cạnh dưới, và trạng thái rỗng thân thiện khi chọn bộ từ chưa có từ (`custom_user`).
 
 ### 4.4. Kho Từ Vựng Tinh Gọn (`VocabularyVaultScreen`)
@@ -182,38 +182,38 @@ flowchart TD
 - Chạm vào mỗi `VaultWordCard` để mở rộng mượt panel câu ví dụ song ngữ Anh–Việt kèm nút phát âm trực tiếp và nhãn giáo trình ngắn (`Cốt lõi 775`, `600 Essential`, `800 Level 450`, `Tự thêm`).
 
 ### 4.5. Tự Thêm Từ Vựng Mới (`AddVocabularySheet`)
-- [AddVocabularySheet.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/home/components/AddVocabularySheet.kt) & [AddCustomVocabularyUseCase.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/domain/usecase/AddCustomVocabularyUseCase.kt):
+- [AddVocabularySheet.kt](app/src/main/java/com/toeicflashcard/presentation/home/components/AddVocabularySheet.kt) & [AddCustomVocabularyUseCase.kt](app/src/main/java/com/toeicflashcard/domain/usecase/AddCustomVocabularyUseCase.kt):
   - **Tab Nhập tay:** Nhập từ vựng, phiên âm IPA (tự chuẩn hóa `/.../`), loại từ (`n.`, `v.`, `adj.`, `adv.`, `phr.`, ...), nghĩa tiếng Việt, chủ đề (chọn gợi ý có sẵn hoặc tự tạo mới, mặc định `"Từ vựng của tôi"`), câu ví dụ Anh–Việt.
   - **Tab Import JSON:** Mở tệp `.json` qua SAF (`ActivityResultContracts.OpenDocument`), tự bóc BOM `\uFEFF`, bỏ qua trùng lặp DB/trong file và các dòng thiếu trường bắt buộc, trả về báo cáo chi tiết số từ đã thêm / trùng / lỗi.
   - Mọi từ tự thêm được cấp phát ID tăng dần từ `MIN_CUSTOM_ID_BASE = 3000` (`max(getMaxWordId(), 3000) + 1`), gán `deckId = "custom_user"`, `nextReviewTimestamp = nowMillis` để xuất hiện ngay trong hàng đợi ôn hôm nay.
 
 ### 4.6. Flashcard 3D & Phát Âm Ngoại Tuyến (`StudyScreen` & `Flashcard3D`)
-- [Flashcard3D.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/study/components/Flashcard3D.kt): Hiệu ứng lật 3D bằng `graphicsLayer { rotationY; cameraDistance = 14f * density }` với `tween(480ms, FastOutSlowInEasing)`. Mặt trước hiển thị chủ đề, loại từ, từ vựng, IPA, nút loa; mặt sau hiển thị nghĩa tiếng Việt và khung ví dụ song ngữ (có nút loa đọc ví dụ).
+- [Flashcard3D.kt](app/src/main/java/com/toeicflashcard/presentation/study/components/Flashcard3D.kt): Hiệu ứng lật 3D bằng `graphicsLayer { rotationY; cameraDistance = 14f * density }` với `tween(480ms, FastOutSlowInEasing)`. Mặt trước hiển thị chủ đề, loại từ, từ vựng, IPA, nút loa; mặt sau hiển thị nghĩa tiếng Việt và khung ví dụ song ngữ (có nút loa đọc ví dụ).
 - Hỗ trợ chuyển tốc độ đọc `1.0x` (`0.95f`) / `0.75x`, đọc cache đồng bộ khi mở phiên học (0ms nhấp nháy spinner), tự chuyển sang chế độ **Ôn luyện tự do** khi chạm vào chủ đề chưa có từ đến hạn.
 
 ### 4.7. Thuật Toán SM-2 & Hệ Thống Daily Streak
 - `Sm2RatingBar` xuất hiện sau khi người học lật mặt sau thẻ lần đầu tiên, kèm nhãn xem trước khoảng lặp (`< 1 ngày`, `1 ngày`, `6 ngày`, `N tháng`/`năm`):
   - **Quên** ($q = 1$), **Khó** ($q = 3$), **Bình thường** ($q = 4$), **Dễ** ($q = 5$).
-- Công thức SM-2 chuẩn hóa trong [Sm2Scheduler.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/domain/scheduler/Sm2Scheduler.kt):
+- Công thức SM-2 chuẩn hóa trong [Sm2Scheduler.kt](app/src/main/java/com/toeicflashcard/domain/scheduler/Sm2Scheduler.kt):
   $$EF' = \max\!\left(1.3,\; EF + 0.1 - (5 - q)\bigl(0.08 + 0.02(5 - q)\bigr)\right)$$
   $$I(n) = \begin{cases} 1 \text{ (đẩy về cuối hàng đợi phiên hiện tại)}, & \text{nếu } q < 3 \\ 1 \text{ ngày}, & \text{nếu } q \ge 3 \text{ và } n = 0 \\ 6 \text{ ngày}, & \text{nếu } q \ge 3 \text{ và } n = 1 \\ \operatorname{round}(I(n-1) \times EF') \text{ ngày}, & \text{nếu } q \ge 3 \text{ và } n \ge 2 \end{cases}$$
-- [StreakCalculator.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/domain/streak/StreakCalculator.kt): Tăng chuỗi +1 nếu ôn liên tiếp qua ngày hôm sau, giữ nguyên chuỗi và tăng `dailyReviewedCount` trong ngày, ghi lịch sử `14` ngày gần nhất vào DataStore (`daily_review_history`).
+- [StreakCalculator.kt](app/src/main/java/com/toeicflashcard/domain/streak/StreakCalculator.kt): Tăng chuỗi +1 nếu ôn liên tiếp qua ngày hôm sau, giữ nguyên chuỗi và tăng `dailyReviewedCount` trong ngày, ghi lịch sử `14` ngày gần nhất vào DataStore (`daily_review_history`).
 
 ### 4.8. Trung Tâm Luyện Tập (`PracticeScreen`), Trắc Nghiệm & Luyện Nghe (`QuizScreen`)
-- [PracticeScreen.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/practice/PracticeScreen.kt): Cung cấp 2 chế độ làm bài tối đa **10 câu** trong phạm vi bộ từ đang chọn (hoặc chọn từng chủ đề qua [QuizScopeDialog.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/home/components/QuizScopeDialog.kt)):
+- [PracticeScreen.kt](app/src/main/java/com/toeicflashcard/presentation/practice/PracticeScreen.kt): Cung cấp 2 chế độ làm bài tối đa **10 câu** trong phạm vi bộ từ đang chọn (hoặc chọn từng chủ đề qua [QuizScopeDialog.kt](app/src/main/java/com/toeicflashcard/presentation/home/components/QuizScopeDialog.kt)):
   1. **Trắc nghiệm nhanh:** Hiện từ + IPA + loa, chọn 1 trong 4 nghĩa tiếng Việt, tự chuyển câu sau `1.200ms`.
   2. **Luyện nghe từ vựng (`listeningMode = true`):** Ẩn mặt chữ tiếng Anh & phiên âm, tự động phát âm qua TTS để rèn phản xạ nghe trước khi mở đáp án; tự chuyển sau `1.600ms`.
 - Màn hình tổng kết thống kê tỷ lệ đúng, danh sách từ sai kèm loa phát âm, và nút **"Đưa các từ sai vào diện ôn tập gấp"** (`nextReviewTimestamp = nowMillis`).
 
 ### 4.9. Thống Kê Học Tập (`StatsScreen` & `StatsViewModel`)
-- [StatsScreen.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/stats/StatsScreen.kt) tổng hợp 4 thẻ kính toàn diện:
+- [StatsScreen.kt](app/src/main/java/com/toeicflashcard/presentation/stats/StatsScreen.kt) tổng hợp 4 thẻ kính toàn diện:
   1. **Tiến độ 7 ngày gần nhất:** Biểu đồ cột vẽ trực tiếp trên Canvas (đường nét đứt mục tiêu ngày, đối chiếu cả lịch sử DataStore lẫn timestamp Room).
   2. **Tiến độ theo Giáo trình / Bộ từ:** Từng giáo trình (`600 Essential Words`, `800 Từ TOEIC Level 450`, `TOEIC Cốt Lõi (775)`, `Từ vựng tự thêm` khi có từ) kèm số từ cần ôn & phần trăm thuộc.
   3. **Tỷ lệ thuộc theo 8 nhóm chủ đề lớn:** *Kinh doanh & Văn phòng*, *Tài chính & Kế toán*, *Nhân sự & Tuyển dụng*, *Tiếp thị & Khách hàng*, *Sản xuất, Vận tải & Du lịch*, *Đời sống & Công trình*, *Luyện Nghe Part 1–3 (TOEIC 450)*, *Luyện Đọc Part 5–6 (TOEIC 450)* (+ *Chủ đề tự tạo* nếu có).
   4. **Nhóm từ khó nhớ nhất:** Top 8 từ có `easeFactor` thấp nhất, hiển thị huy hiệu `EF`, nút loa và nút **"Ôn lại nhóm từ khó"** mở thẳng phiên học SM-2.
 
 ### 4.10. Hệ Thống 7 Không Gian Học Tập Tối (7 Dark Presets) & Độ Đục Kính
-- Cấu trúc `enum class DarkTone` trong [UserPreferences.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/domain/model/UserPreferences.kt) cung cấp đầy đủ token phân tầng độ sáng (Nền đơn sắc -> Thẻ kính -> Sheet/Dialog -> Chữ chính -> Chữ phụ -> Accent -> Viền sáng) chống lóa chữ (halation):
+- Cấu trúc `enum class DarkTone` trong [UserPreferences.kt](app/src/main/java/com/toeicflashcard/domain/model/UserPreferences.kt) cung cấp đầy đủ token phân tầng độ sáng (Nền đơn sắc -> Thẻ kính -> Sheet/Dialog -> Chữ chính -> Chữ phụ -> Accent -> Viền sáng) chống lóa chữ (halation):
 
 | Preset (`DarkTone`) | Nhãn UI | Nền (`background`) | Thẻ kính (`glassSurface`) | Sheet (`elevatedSurface`) | Chữ chính (`primaryText`) | Accent (`accent`) |
 | --- | --- | :---: | :---: | :---: | :---: | :---: |
@@ -228,7 +228,7 @@ flowchart TD
 - Slider độ đục kính (`0.45f..0.95f`, mặc định `0.82f` Dark / `0.75f` Light) phản hồi tức thì qua `glassOpacityPreview` và chỉ ghi DataStore khi thả tay.
 
 ### 4.11. Nhắc Nhở Hàng Ngày (`WorkManager`)
-- [ReminderSettingsSheet.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/presentation/home/components/ReminderSettingsSheet.kt) & [DailyReminderWorker.kt](file:///d:/cv/project/Test_appAndroid/app/src/main/java/com/toeicflashcard/data/worker/DailyReminderWorker.kt): Xin quyền `POST_NOTIFICATIONS` trên Android 13+, chọn giờ qua `TimePicker`, lập lịch `PeriodicWorkRequest` 24 giờ hiển thị số từ đến hạn và mục tiêu còn lại.
+- [ReminderSettingsSheet.kt](app/src/main/java/com/toeicflashcard/presentation/home/components/ReminderSettingsSheet.kt) & [DailyReminderWorker.kt](app/src/main/java/com/toeicflashcard/data/worker/DailyReminderWorker.kt): Xin quyền `POST_NOTIFICATIONS` trên Android 13+, chọn giờ qua `TimePicker`, lập lịch `PeriodicWorkRequest` 24 giờ hiển thị số từ đến hạn và mục tiêu còn lại.
 
 ### 4.12. Tối Ưu Hiệu Năng: 120Hz ARR, Warm NavHost & Zero Idle Animation
 - **Adaptive Refresh Rate (`MainActivity.kt`):** Chọn `Display.Mode` có tần số cao nhất khớp độ phân giải (`120.00001Hz`), bật `isFrameRatePowerSavingsBalanced = true` & `frameRateBoostOnTouchEnabled = true` trên API 35+, không khóa cứng `preferredRefreshRate` để tự động hạ xuống `60Hz`/`1Hz` khi đứng yên.

@@ -14,11 +14,7 @@ $EmulatorExe = Join-Path $EmulatorDir 'emulator.exe'
 $AdbExe = Join-Path $SdkRoot 'platform-tools\adb.exe'
 if (-not (Test-Path $AdbExe)) { $AdbExe = 'adb' }
 
-$ProjectRoot = if (Test-Path 'D:\cv\project\Test_appAndroid\app') {
-    'D:\cv\project\Test_appAndroid'
-} else {
-    Split-Path -Parent $PSScriptRoot
-}
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
 
 $requiredPaths = @(
     $EmulatorDir,
